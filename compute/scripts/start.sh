@@ -15,22 +15,8 @@ inetd -e /etc/inetd.conf
 mkdir -p /data/boot.d
 run-parts /data/boot.d
 
-# Start Jupyter Notebook server
-echo "Starting Jupyter Notebook server"
-mkdir -p /data/user_storage/opentrons_data/jupyter
-jupyter notebook --allow-root &
-
-# Check if config exists, and alert if not found
-echo "Checking for deck calibration data..."
-config_path=`python -c "from opentrons import config; print(config.get_config_index().get('deckCalibrationFile'))"`
-
-if [ ! -e "$config_path" ]; then
-    echo $config_path
-    echo "Config file not found. Please perform factory calibration and then restart robot"
-fi
-
 export ENABLE_NETWORKING_ENDPOINTS=true
-echo "Starting Opentrons API server"
-python -m opentrons.server.main -U $OT_SERVER_UNIX_SOCKET_PATH opentrons.server.main:init
-echo "Server exited unexpectedly. Please power-cycle the machine, and contact Opentrons support."
+echo "Starting 5001 Test-Fixture Script..."
+python -m opentrons.tools.pcb_fixture_5001
+echo "Script exited unexpectedly. Please power-cycle the test-fixture."
 while true; do sleep 1; done
