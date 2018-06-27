@@ -19,4 +19,4 @@ gpio.set_high(gpio.OUTPUT_PINS['RESET'])
 sleep(0.25)
 
 # turn light to blue
-robot.turn_on_button_light()
+# robot.turn_on_button_light()
