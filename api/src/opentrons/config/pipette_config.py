@@ -107,21 +107,21 @@ def load(pipette_model: str) -> pipette_config:
     )
 
     # Verify that stored values agree with calculations
-    if 'multi' in pipette_model:
-        assert res.model_offset[1] == Y_OFFSET_MULTI
-        assert res.model_offset[2] == Z_OFFSET_MULTI
-    elif 'p1000' in pipette_model:
-        assert res.model_offset[1] == 0.0
-        assert res.model_offset[2] == Z_OFFSET_P1000
-    elif 'p10' in pipette_model:
-        assert res.model_offset[1] == 0.0
-        assert res.model_offset[2] == Z_OFFSET_P10
-    elif 'p300' in pipette_model:
-        assert res.model_offset[1] == 0.0
-        assert res.model_offset[2] == Z_OFFSET_P300
-    else:
-        assert res.model_offset[1] == 0.0
-        assert res.model_offset[2] == Z_OFFSET_P50
+    # if 'multi' in pipette_model:
+    #     assert res.model_offset[1] == Y_OFFSET_MULTI
+    #     assert res.model_offset[2] == Z_OFFSET_MULTI
+    # elif 'p1000' in pipette_model:
+    #     assert res.model_offset[1] == 0.0
+    #     assert res.model_offset[2] == Z_OFFSET_P1000
+    # elif 'p10' in pipette_model:
+    #     assert res.model_offset[1] == 0.0
+    #     assert res.model_offset[2] == Z_OFFSET_P10
+    # elif 'p300' in pipette_model:
+    #     assert res.model_offset[1] == 0.0
+    #     assert res.model_offset[2] == Z_OFFSET_P300
+    # else:
+    #     assert res.model_offset[1] == 0.0
+    #     assert res.model_offset[2] == Z_OFFSET_P50
 
     return res
 

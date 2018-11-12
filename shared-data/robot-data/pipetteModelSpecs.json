@@ -370,5 +370,33 @@
     },
     "quirks": ["needs-pickup-shake"],
     "tipLength": 76.7
+  },
+  "p1000_single_plus": {
+    "name": "p1000_single",
+    "plungerPositions": {
+      "top": 19.5,
+      "bottom": 2.5,
+      "blowOut": -0.5,
+      "dropTip": -3.7
+    },
+    "pickUpCurrent": 0.1,
+    "pickUpDistance": 15,
+    "modelOffset": [0.0, 0.0, 20.0],
+    "plungerCurrent": 0.5,
+    "dropTipCurrent": 0.7,
+    "ulPerMm": {
+      "aspirate": [
+        [88.2951, 0.0647, 53.153],
+        [119.062, 0.0217, 56.9474],
+        [211.8242, 0.0086, 58.9607],
+        [490.5573, 0.0029, 59.9144],
+        [1000, 0.0008, 60.9102]
+      ],
+      "dispense": [
+        [1000, 0, 61.3275]
+      ]
+    },
+    "quirks": ["needs-pickup-shake"],
+    "tipLength": 76.7
   }
 }
