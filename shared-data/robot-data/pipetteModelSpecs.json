@@ -377,13 +377,13 @@
       "top": 19.5,
       "bottom": -20,
       "blowOut": -25,
-      "dropTip": -35
+      "dropTip": -30
     },
     "pickUpCurrent": 0.1,
     "pickUpDistance": 15,
     "modelOffset": [0.0, 0.0, 20.0],
-    "plungerCurrent": 0.5,
-    "dropTipCurrent": 0.7,
+    "plungerCurrent": 1.0,
+    "dropTipCurrent": 1.0,
     "ulPerMm": {
       "aspirate": [
         [1000, 0, 26.5]
@@ -394,5 +394,53 @@
     },
     "quirks": ["needs-pickup-shake"],
     "tipLength": 76.7
-  }
+  },
+    "p300_single_plus": {
+    "name": "p1000_single",
+    "plungerPositions": {
+      "top": 19.5,
+      "bottom": -20,
+      "blowOut": -25,
+      "dropTip": -30
+    },
+    "pickUpCurrent": 0.1,
+    "pickUpDistance": 15,
+    "modelOffset": [0.0, 0.0, 20.0],
+    "plungerCurrent": 1.0,
+    "dropTipCurrent": 1.0,
+    "ulPerMm": {
+      "aspirate": [
+        [300, 0, 9.62]
+      ],
+      "dispense": [
+        [300, 0, 9.62]
+      ]
+    },
+    "quirks": ["needs-pickup-shake"],
+    "tipLength": 76.7
+  },
+    "p10_single_plus": {
+    "name": "p1000_single",
+    "plungerPositions": {
+      "top": 19.5,
+      "bottom": -20,
+      "blowOut": -25,
+      "dropTip": -30
+    },
+    "pickUpCurrent": 0.1,
+    "pickUpDistance": 15,
+    "modelOffset": [0.0, 0.0, 20.0],
+    "plungerCurrent": 0.8,
+    "dropTipCurrent": 0.8,
+    "ulPerMm": {
+      "aspirate": [
+        [25, 0, 0.785]
+      ],
+      "dispense": [
+        [25, 0, 0.785]
+      ]
+    },
+    "quirks": ["needs-pickup-shake"],
+    "tipLength": 76.7
+  },
 }
