@@ -372,7 +372,7 @@
     "tipLength": 76.7
   },
   "p1000_single_plus": {
-    "name": "p1000_single",
+    "name": "p1000+_single",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
@@ -396,7 +396,7 @@
     "tipLength": 76.7
   },
     "p300_single_plus": {
-    "name": "p1000_single",
+    "name": "p300+_single",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
@@ -410,7 +410,9 @@
     "dropTipCurrent": 1.0,
     "ulPerMm": {
       "aspirate": [
-        [300, 0, 9.62]
+        [30.0, 0.015, 8.7],
+        [70, 0.0045, 8.95],
+        [350, 0.0005, 9.35]
       ],
       "dispense": [
         [300, 0, 9.62]
@@ -420,7 +422,7 @@
     "tipLength": 76.7
   },
     "p10_single_plus": {
-    "name": "p1000_single",
+    "name": "p10+_single",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
