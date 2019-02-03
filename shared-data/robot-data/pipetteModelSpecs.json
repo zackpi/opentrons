@@ -372,7 +372,7 @@
     "tipLength": 76.7
   },
   "p1000_single_plus": {
-    "name": "p1000+_single",
+    "name": "p1000_single_v2.0",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
@@ -397,7 +397,7 @@
     "tipLength": 76.7
   },
     "p300_single_plus": {
-    "name": "p300+_single",
+    "name": "p300_single_v2.0",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
@@ -423,7 +423,7 @@
     "tipLength": 76.7
   },
     "p10_single_plus": {
-    "name": "p10+_single",
+    "name": "p10_single_v2.0",
     "plungerPositions": {
       "top": 19.5,
       "bottom": -20,
