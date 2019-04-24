@@ -426,9 +426,9 @@
     "name": "p10_single",
     "plungerPositions": {
       "top": 19.5,
-      "bottom": -20,
-      "blowOut": -25,
-      "dropTip": -30
+      "bottom": -10,
+      "blowOut": -14,
+      "dropTip": -28
     },
     "pickUpCurrent": 0.1,
     "pickUpDistance": 15,
