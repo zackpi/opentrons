@@ -511,6 +511,7 @@ class InstrumentContext(CommandPublisher):
 
         self._last_location: Union[Labware, Well, None] = None
         self._last_tip_picked_up_from: Union[Well, None] = None
+        self._last_tip_z: Union[float, None] = None
         self._log = log_parent.getChild(repr(self))
         self._log.info("attached")
         self._well_bottom_clearance = 0.5
@@ -962,6 +963,7 @@ class InstrumentContext(CommandPublisher):
 
         tiprack.use_tips(target, num_channels)
         self._last_tip_picked_up_from = target
+        self._last_tip_z = target.top().point.z
         return self
 
     @cmds.publish.both(command=cmds.drop_tip)
@@ -1265,7 +1267,8 @@ class InstrumentContext(CommandPublisher):
         return self._ctx.delay()
 
     def move_to(self, location: types.Location, force_direct: bool = False,
-                minimum_z_height: float = None
+                minimum_z_height: float = None,
+                speed: float =None
                 ) -> 'InstrumentContext':
         """ Move the instrument.
 
@@ -1297,7 +1300,7 @@ class InstrumentContext(CommandPublisher):
         try:
             for move in moves:
                 self._hw_manager.hardware.move_to(
-                    self._mount, move[0], critical_point=move[1])
+                    self._mount, move[0], critical_point=move[1], speed=speed)
         except Exception:
             self._ctx.location_cache = None
             raise

@@ -87,6 +87,7 @@ class API(HardwareAPILike):
             self._loop = asyncio.get_event_loop()
         else:
             self._loop = loop
+        print(f"Hardware loop {self._loop}")
         self._callbacks: set = set()
         # {'X': 0.0, 'Y': 0.0, 'Z': 0.0, 'A': 0.0, 'B': 0.0, 'C': 0.0}
         self._current_position: Dict[Axis, float] = {}
