@@ -1,14 +1,15 @@
 // electron main entry point
-import { app, dialog, ipcMain, Menu } from 'electron'
+import { app, dialog, ipcMain, BrowserWindow } from 'electron'
 
 import createUi from './ui'
 import initializeMenu from './menu'
-import createLogger from './log'
+import createLogger, { Logger } from './log'
 import { getConfig, getStore, getOverrides, registerConfig } from './config'
 import { registerDiscovery } from './discovery'
 import { registerRobotLogs } from './robot-logs'
 import { registerUpdate } from './update'
 import { registerBuildrootUpdate } from './buildroot'
+import { Dispatch } from './types'
 
 const config = getConfig()
 const log = createLogger(__filename)
@@ -19,31 +20,34 @@ log.debug('App config', {
   overrides: getOverrides(),
 })
 
-if (config.devtools) {
+const devMode = config.devtools
+
+if (devMode) {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   require('electron-debug')({ isEnabled: true, showDevTools: true })
 }
 
 // hold on to references so they don't get garbage collected
-let mainWindow
+let mainWindow: BrowserWindow | null = null
 let rendererLogger
 
 app.once('ready', startUp)
 app.once('window-all-closed', () => app.quit())
 
-function startUp() {
+function startUp(): void {
   log.info('Starting App')
   process.on('uncaughtException', error => log.error('Uncaught: ', { error }))
 
-  mainWindow = createUi()
+  mainWindow = createUi().once('closed', () => (mainWindow = null))
+
   rendererLogger = createRendererLogger()
 
-  mainWindow.once('closed', () => (mainWindow = null))
-  initializeMenu()
+  initializeMenu(devMode)
 
   // wire modules to UI dispatches
-  const dispatch = action => {
+  const dispatch: Dispatch = action => {
     log.silly('Sending action via IPC to renderer', { action })
-    mainWindow.webContents.send('dispatch', action)
+    mainWindow && mainWindow.webContents.send('dispatch', action)
   }
 
   const configHandler = registerConfig(dispatch)
@@ -70,7 +74,7 @@ function startUp() {
   log.silly('Global references', { mainWindow, rendererLogger })
 }
 
-function createRendererLogger() {
+function createRendererLogger(): Logger {
   log.info('Creating renderer logger')
 
   const logger = createLogger()
@@ -79,7 +83,8 @@ function createRendererLogger() {
   return logger
 }
 
-function installAndOpenExtensions() {
+function installAndOpenExtensions(): Promise<unknown> {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const devtools = require('electron-devtools-installer')
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS
   const install = devtools.default
@@ -87,16 +92,5 @@ function installAndOpenExtensions() {
 
   return Promise.all(
     extensions.map(name => install(devtools[name], forceDownload))
-  ).then(() =>
-    mainWindow.webContents.on('context-menu', (_, props) => {
-      const { x, y } = props
-
-      Menu.buildFromTemplate([
-        {
-          label: 'Inspect element',
-          click: () => mainWindow.inspectElement(x, y),
-        },
-      ]).popup(mainWindow)
-    })
   )
 }

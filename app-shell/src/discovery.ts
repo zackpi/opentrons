@@ -1,10 +1,11 @@
-// @flow
 // app shell discovery module
 import { app } from 'electron'
 import Store from 'electron-store'
 import throttle from 'lodash/throttle'
 
-import DiscoveryClient, {
+import createDiscoveryClient, {
+  DiscoveryClient,
+  Service,
   SERVICE_EVENT,
   SERVICE_REMOVED_EVENT,
 } from '@opentrons/discovery-client'
@@ -12,9 +13,11 @@ import DiscoveryClient, {
 import { getConfig, getOverrides, handleConfigChange } from './config'
 import createLogger from './log'
 
-import type { Service } from '@opentrons/discovery-client'
+import { Action, Dispatch } from './types'
 
-import type { Action, Dispatch } from './types'
+interface DiscoveryStore {
+  services: Service[]
+}
 
 const log = createLogger(__filename)
 
@@ -24,16 +27,19 @@ const SLOW_POLL_INTERVAL_MS = 15000
 const UPDATE_THROTTLE_MS = 500
 
 let config
-let store
-let client
+let store: Store<DiscoveryStore>
+let client: DiscoveryClient
 
-export function registerDiscovery(dispatch: Dispatch) {
+export function registerDiscovery(dispatch: Dispatch): Dispatch {
   const onServiceUpdate = throttle(handleServices, UPDATE_THROTTLE_MS)
 
   config = getConfig('discovery')
-  store = new Store({ name: 'discovery', defaults: { services: [] } })
+  store = new Store<DiscoveryStore>({
+    name: 'discovery',
+    defaults: { services: [] },
+  })
 
-  client = DiscoveryClient({
+  client = createDiscoveryClient({
     pollInterval: SLOW_POLL_INTERVAL_MS,
     logger: log,
     candidates: ['[fd00:0:cafe:fefe::1]'].concat(config.candidates),
@@ -68,8 +74,9 @@ export function registerDiscovery(dispatch: Dispatch) {
     }
   }
 
-  function handleServices() {
+  function handleServices(): void {
     store.set('services', filterServicesToPersist(client.services))
+
     dispatch({
       type: 'discovery:UPDATE_LIST',
       payload: { robots: client.services },
@@ -77,16 +84,16 @@ export function registerDiscovery(dispatch: Dispatch) {
   }
 }
 
-export function getRobots() {
+export function getRobots(): Service[] {
   if (!client) return []
 
   return client.services
 }
 
-function filterServicesToPersist(services: Array<Service>) {
+function filterServicesToPersist(services: Array<Service>): Service[] {
   const candidateOverrides = getOverrides('discovery.candidates')
-  if (!candidateOverrides) return client.services
+  if (!candidateOverrides) return services
 
   const blacklist = [].concat(candidateOverrides)
-  return client.services.filter(s => blacklist.every(ip => ip !== s.ip))
+  return services.filter(s => blacklist.every(ip => ip !== s.ip))
 }

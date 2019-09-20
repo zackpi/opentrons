@@ -1,11 +1,10 @@
-// @flow
 // start a buildroot migration by POSTing the necessary wheel files to a robot
 // and restarting
 
 import path from 'path'
 
 import { fetch, postFile } from '../http'
-import type { RobotHost } from '@opentrons/app/src/robot-api'
+import { RobotHost } from '@opentrons/app'
 
 const PREMIGRATION_WHL_DIR = path.join(
   __dirname,
@@ -22,7 +21,7 @@ const PREMIGRATION_SERVER_WHL = path.join(
 )
 const SYSTEM_FILENAME = 'ot2-system.zip'
 
-export function startPremigration(robot: RobotHost): Promise<mixed> {
+export function startPremigration(robot: RobotHost): Promise<unknown> {
   const apiUrl = `http://${robot.ip}:${robot.port}/server/update`
   const serverUrl = `http://${robot.ip}:${robot.port}/server/update/bootstrap`
   const restartUrl = `http://${robot.ip}:${robot.port}/server/restart`
@@ -36,7 +35,7 @@ export function uploadSystemFile(
   robot: RobotHost,
   urlPath: string,
   file: string
-): Promise<mixed> {
+): Promise<unknown> {
   const url = `http://${robot.ip}:${robot.port}${urlPath}`
 
   return postFile(url, SYSTEM_FILENAME, file)

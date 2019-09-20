@@ -1,4 +1,3 @@
-// @flow
 // buildroot update files
 import path from 'path'
 import { readFile, ensureDir } from 'fs-extra'
@@ -11,12 +10,9 @@ import { downloadManifest, getReleaseSet } from './release-manifest'
 import { getReleaseFiles, readUserFileInfo } from './release-files'
 import { startPremigration, uploadSystemFile } from './update'
 
-import type { Action, Dispatch } from '../types'
-import type { ReleaseSetUrls, ReleaseSetFilepaths } from './types'
-import type {
-  BuildrootUpdateInfo,
-  BuildrootAction,
-} from '@opentrons/app/src/shell'
+import { Action, Dispatch } from '../types'
+import { ReleaseSetUrls, ReleaseSetFilepaths } from './types'
+import { BuildrootUpdateInfo } from '@opentrons/app'
 
 const log = createLogger(__filename)
 
@@ -43,14 +39,18 @@ export function registerBuildrootUpdate(dispatch: Dispatch) {
         log.info('Starting robot premigration', { robot })
 
         startPremigration(robot)
-          .then((): BuildrootAction => ({
-            type: 'buildroot:PREMIGRATION_DONE',
-            payload: robot.name,
-          }))
-          .catch((error: Error): BuildrootAction => ({
-            type: 'buildroot:PREMIGRATION_ERROR',
-            payload: { message: error.message },
-          }))
+          .then(
+            (): Action => ({
+              type: 'buildroot:PREMIGRATION_DONE',
+              payload: robot.name,
+            })
+          )
+          .catch(
+            (error: Error): Action => ({
+              type: 'buildroot:PREMIGRATION_ERROR',
+              payload: { message: error.message },
+            })
+          )
           .then(dispatch)
 
         break
@@ -58,7 +58,8 @@ export function registerBuildrootUpdate(dispatch: Dispatch) {
 
       case 'buildroot:UPLOAD_FILE': {
         const { host, path, systemFile } = action.payload
-        const file = systemFile !== null ? systemFile : updateSet?.system
+        const file =
+          systemFile !== null ? systemFile : updateSet && updateSet.system
 
         if (file == null) {
           return dispatch({
@@ -68,20 +69,24 @@ export function registerBuildrootUpdate(dispatch: Dispatch) {
         }
 
         uploadSystemFile(host, path, file)
-          .then(() => ({
-            type: 'buildroot:FILE_UPLOAD_DONE',
-            payload: host.name,
-          }))
-          .catch((error: Error) => {
-            log.warn('Error uploading update to robot', { path, file, error })
+          .then(
+            (): Action => ({
+              type: 'buildroot:FILE_UPLOAD_DONE',
+              payload: host.name,
+            })
+          )
+          .catch(
+            (error: Error): Action => {
+              log.warn('Error uploading update to robot', { path, file, error })
 
-            return {
-              type: 'buildroot:UNEXPECTED_ERROR',
-              payload: {
-                message: `Error uploading update to robot: ${error.message}`,
-              },
+              return {
+                type: 'buildroot:UNEXPECTED_ERROR',
+                payload: {
+                  message: `Error uploading update to robot: ${error.message}`,
+                },
+              }
             }
-          })
+          )
           .then(dispatch)
 
         break
@@ -91,17 +96,21 @@ export function registerBuildrootUpdate(dispatch: Dispatch) {
         const { systemFile } = action.payload
 
         readUserFileInfo(systemFile)
-          .then(userFile => ({
-            type: 'buildroot:USER_FILE_INFO',
-            payload: {
-              systemFile: userFile.systemFile,
-              version: userFile.versionInfo.opentrons_api_version,
-            },
-          }))
-          .catch((error: Error) => ({
-            type: 'buildroot:UNEXPECTED_ERROR',
-            payload: { message: error.message },
-          }))
+          .then(
+            (userFile): Action => ({
+              type: 'buildroot:USER_FILE_INFO',
+              payload: {
+                systemFile: userFile.systemFile,
+                version: userFile.versionInfo.opentrons_api_version,
+              },
+            })
+          )
+          .catch(
+            (error: Error): Action => ({
+              type: 'buildroot:UNEXPECTED_ERROR',
+              payload: { message: error.message },
+            })
+          )
           .then(dispatch)
 
         break
@@ -134,7 +143,7 @@ export function getBuildrootUpdateUrls(): Promise<ReleaseSetUrls | null> {
 //      a. If the files need downloading, dispatch progress updates to UI
 //   4. Cache the filepaths of the update files in memory
 //   5. Dispatch info or error to UI
-export function checkForBuildrootUpdate(dispatch: Dispatch): Promise<mixed> {
+export function checkForBuildrootUpdate(dispatch: Dispatch): Promise<unknown> {
   const fileDownloadDir = path.join(DIRECTORY, CURRENT_VERSION)
 
   return getBuildrootUpdateUrls().then(urls => {
@@ -142,11 +151,11 @@ export function checkForBuildrootUpdate(dispatch: Dispatch): Promise<mixed> {
 
     dispatch({ type: 'buildroot:UPDATE_VERSION', payload: CURRENT_VERSION })
 
-    return (ensureDir(fileDownloadDir): Promise<void>)
+    return ensureDir(fileDownloadDir)
       .then(() => {
         let prevPercentDone = 0
 
-        const handleProgress = progress => {
+        return getReleaseFiles(urls, fileDownloadDir, progress => {
           const { downloaded, size } = progress
           if (size !== null) {
             const percentDone = Math.round((downloaded / size) * 100)
@@ -159,17 +168,15 @@ export function checkForBuildrootUpdate(dispatch: Dispatch): Promise<mixed> {
               prevPercentDone = percentDone
             }
           }
-        }
-
-        return getReleaseFiles(urls, fileDownloadDir, handleProgress)
+        })
       })
       .then(filepaths => cacheUpdateSet(filepaths))
-      .then(updateInfo =>
+      .then(updateInfo => {
         dispatch({ type: 'buildroot:UPDATE_INFO', payload: updateInfo })
-      )
-      .catch((error: Error) =>
+      })
+      .catch((error: Error) => {
         dispatch({ type: 'buildroot:DOWNLOAD_ERROR', payload: error.message })
-      )
+      })
   })
 }
 

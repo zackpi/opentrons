@@ -19,17 +19,15 @@ const WINDOW_OPTS = {
   useContentSize: true,
   width: config.width,
   height: config.height,
-  // allow webPreferences to be set at launchtime from config
-  webPreferences: Object.assign(
-    {
-      preload: path.join(__dirname, './preload.js'),
-      nodeIntegration: false,
-    },
-    config.webPreferences
-  ),
+  // allow webPreferences to be set at launch-time from config
+  webPreferences: {
+    preload: path.join(__dirname, './preload.js'),
+    nodeIntegration: false,
+    ...config.webPreferences,
+  },
 }
 
-export default function createUi() {
+export default function createUi(): BrowserWindow {
   log.debug('Creating main window', { options: WINDOW_OPTS })
 
   const mainWindow = new BrowserWindow(WINDOW_OPTS).once(

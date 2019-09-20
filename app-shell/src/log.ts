@@ -4,9 +4,16 @@ import { inspect } from 'util'
 import fse from 'fs-extra'
 import path from 'path'
 import dateFormat from 'dateformat'
-import winston from 'winston'
+import winston, { Logger } from 'winston'
 
 import { getConfig } from './config'
+import { Config } from './types'
+
+export { Logger }
+
+type Transport =
+  | winston.transports.FileTransportInstance
+  | winston.transports.ConsoleTransportInstance
 
 const LOG_DIR = path.join(app.getPath('userData'), 'logs')
 const ERROR_LOG = path.join(LOG_DIR, 'error.log')
@@ -18,22 +25,22 @@ const FILE_OPTIONS = {
   maxsize: 1024 * 1024,
   // keep 10 backups at most
   maxFiles: 10,
-  // roll filenames in accending order (larger the number, older the log)
+  // roll filenames in ascending order (larger the number, older the log)
   tailable: true,
 }
 
-let config
-let transports
-let log
+let config: Config['log']
+let transports: Transport[]
+let log: Logger | void
 
-export default function initializeLogger(filename) {
+export default function initializeLogger(filename?: string): Logger {
   if (!config) config = getConfig('log')
   if (!transports) initializeTransports()
 
   return createLogger(filename)
 }
 
-function initializeTransports() {
+function initializeTransports(): void {
   let error = null
 
   // sync is ok here because this only happens once
@@ -52,8 +59,9 @@ function initializeTransports() {
   log.info(`Level "${config.level.console}" and higher logging to console`)
 }
 
-function createTransports() {
-  const timeFromStamp = ts => dateFormat(new Date(ts), 'HH:MM:ss.l')
+function createTransports(): Transport[] {
+  const timeFromStamp = (ts: string): string =>
+    dateFormat(new Date(ts), 'HH:MM:ss.l')
 
   return [
     // error file log
@@ -97,7 +105,7 @@ function createTransports() {
   ]
 }
 
-function createLogger(filename) {
+function createLogger(filename?: string): Logger {
   log && log.debug(`Creating logger for ${filename}`)
 
   const formats = [

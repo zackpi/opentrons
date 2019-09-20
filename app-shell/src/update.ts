@@ -1,4 +1,3 @@
-// @flow
 // app updater
 import path from 'path'
 import fs from 'fs'
@@ -7,8 +6,12 @@ import { autoUpdater as updater } from 'electron-updater'
 import createLogger from './log'
 import { getConfig } from './config'
 
-import type { UpdateInfo } from '@opentrons/app/src/shell'
-import type { Action, Dispatch, PlainError } from './types'
+import { UpdateInfo } from '@opentrons/app'
+import { Action, Dispatch, PlainError } from './types'
+
+interface ErrorPayload {
+  error: PlainError
+}
 
 updater.logger = createLogger(__filename)
 updater.autoDownload = false
@@ -34,10 +37,13 @@ export function registerUpdate(dispatch: Dispatch) {
   }
 }
 
-function checkUpdate(dispatch: Dispatch) {
-  const onAvailable = (info: UpdateInfo) => done({ info, available: true })
-  const onNotAvailable = (info: UpdateInfo) => done({ info, available: false })
-  const onError = (error: Error) => done({ error: PlainObjectError(error) })
+function checkUpdate(dispatch: Dispatch): void {
+  const onAvailable = (info: UpdateInfo): void =>
+    done({ info, available: true })
+  const onNotAvailable = (info: UpdateInfo): void =>
+    done({ info, available: false })
+  const onError = (error: Error): void =>
+    done({ error: PlainObjectError(error) })
 
   updater.once('update-available', onAvailable)
   updater.once('update-not-available', onNotAvailable)
@@ -46,7 +52,9 @@ function checkUpdate(dispatch: Dispatch) {
   updater.channel = getConfig('update.channel')
   updater.checkForUpdates()
 
-  function done(payload: *) {
+  function done(
+    payload: { info: UpdateInfo; available: boolean } | ErrorPayload
+  ): void {
     updater.removeListener('update-available', onAvailable)
     updater.removeListener('update-not-available', onNotAvailable)
     updater.removeListener('error', onError)
@@ -54,15 +62,16 @@ function checkUpdate(dispatch: Dispatch) {
   }
 }
 
-function downloadUpdate(dispatch: Dispatch) {
-  const onDownloaded = () => done({})
-  const onError = (error: Error) => done({ error: PlainObjectError(error) })
+function downloadUpdate(dispatch: Dispatch): void {
+  const onDownloaded = (): void => done({})
+  const onError = (error: Error): void =>
+    done({ error: PlainObjectError(error) })
 
   updater.once('update-downloaded', onDownloaded)
   updater.once('error', onError)
   updater.downloadUpdate()
 
-  function done(payload: *) {
+  function done(payload: {} | ErrorPayload): void {
     updater.removeListener('update-downloaded', onDownloaded)
     updater.removeListener('error', onError)
     dispatch({ type: 'shell:DOWNLOAD_UPDATE_RESULT', payload })

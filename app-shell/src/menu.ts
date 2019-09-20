@@ -1,20 +1,21 @@
 // application menu
-import { Menu } from 'electron'
+import { Menu, MenuItemConstructorOptions } from 'electron'
+import contextMenu from 'electron-context-menu'
 
 import pkg from '../package.json'
 
 // file or application menu
-const firstMenu = {
+const firstMenu: MenuItemConstructorOptions = {
   role: process.platform === 'darwin' ? 'appMenu' : 'fileMenu',
 }
 
-const editMenu = { role: 'editMenu' }
+const editMenu: MenuItemConstructorOptions = { role: 'editMenu' }
 
-const viewMenu = { role: 'viewMenu' }
+const viewMenu: MenuItemConstructorOptions = { role: 'viewMenu' }
 
-const windowMenu = { role: 'windowMenu' }
+const windowMenu: MenuItemConstructorOptions = { role: 'windowMenu' }
 
-const helpMenu = {
+const helpMenu: MenuItemConstructorOptions = {
   role: 'help',
   submenu: [
     {
@@ -34,6 +35,7 @@ const helpMenu = {
 
 const template = [firstMenu, editMenu, viewMenu, windowMenu, helpMenu]
 
-export default function initializeMenu() {
+export default function initializeMenu(devMode: boolean): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+  contextMenu({ showInspectElement: devMode })
 }

@@ -1,19 +1,16 @@
-// @flow
 // app configuration and settings
 import Store from 'electron-store'
 import mergeOptions from 'merge-options'
 import { getIn } from '@thi.ng/paths'
 import uuid from 'uuid/v4'
-import yargsParser from 'yargs-parser'
+import yargsParser, { Arguments } from 'yargs-parser'
 
 import pkg from '../package.json'
-import createLogger from './log'
+import createLogger, { Logger } from './log'
 
-// TODO(mc, 2018-08-08): figure out type exports from app
-import type { Config } from '@opentrons/app/src/config'
-import type { Action, Dispatch } from './types'
+import { Action, Dispatch, Config } from './types'
 
-export type { Config }
+type ConfigStore = Store<Config>
 
 // make sure all arguments are included in production
 const argv =
@@ -86,12 +83,14 @@ const DEFAULTS: Config = {
 }
 
 // lazy load store, overrides, and log because of config/log interdependency
-let _store
-let _over
-let _log
-const store = () => _store || (_store = new Store({ defaults: DEFAULTS }))
-const overrides = () => _over || (_over = yargsParser(argv, PARSE_ARGS_OPTS))
-const log = () => _log || (_log = createLogger(__filename))
+let _store: ConfigStore
+let _over: Arguments
+let _log: Logger
+const store = (): ConfigStore =>
+  _store || (_store = new Store({ defaults: DEFAULTS }))
+const overrides = (): Arguments =>
+  _over || (_over = yargsParser(argv, PARSE_ARGS_OPTS))
+const log = (): Logger => _log || (_log = createLogger(__filename))
 
 // initialize and register the config module with dispatches from the UI
 export function registerConfig(dispatch: Dispatch) {
@@ -105,26 +104,26 @@ export function registerConfig(dispatch: Dispatch) {
         log().info(`${payload.path} in overrides; not updating`)
       } else {
         log().info(`Updating "${payload.path}" to ${payload.value}`)
-        store().set(payload.path, payload.value)
+        store().set(payload.path as any, payload.value)
         dispatch({ type: 'config:SET', payload })
       }
     }
   }
 }
 
-export function getStore() {
+export function getStore(): Config {
   return store().store
 }
 
-export function getOverrides(path?: string) {
-  return getIn(overrides(), path)
+export function getOverrides(path?: string): any {
+  return path ? getIn(overrides(), path) : overrides()
 }
 
 // TODO(mc, 2010-07-01): getConfig with path parameter can't be typed
 // Remove the path parameter
-export function getConfig(path?: string) {
-  const result = store().get(path)
-  const over = getIn(overrides(), path)
+export function getConfig(path?: string): any {
+  const result = path ? store().get(path as any) : store().store
+  const over = getOverrides(path)
 
   if (over != null) {
     if (typeof result === 'object' && result != null) {
@@ -139,7 +138,7 @@ export function getConfig(path?: string) {
 
 export function handleConfigChange(
   path: string,
-  changeHandler: (newValue: any, oldValue: any) => mixed
-) {
-  store().onDidChange(path, changeHandler)
+  changeHandler: (newValue: any, oldValue: any) => unknown
+): void {
+  store().onDidChange(path as any, changeHandler)
 }

@@ -1,16 +1,13 @@
-// @flow
 // fetch wrapper to throw if response is not ok
 import { createReadStream, createWriteStream } from 'fs'
-import { Transform, Readable } from 'stream'
+import { Transform } from 'stream'
 import pump from 'pump'
-import _fetch from 'node-fetch'
+import _fetch, { Request, RequestInit, Response } from 'node-fetch'
 import FormData from 'form-data'
-
-import type { Request, RequestInit, Response } from 'node-fetch'
 
 type RequestInput = Request | string
 
-export type DownloadProgress = {| downloaded: number, size: number | null |}
+export type DownloadProgress = { downloaded: number; size: number | null }
 
 export function fetch(
   input: RequestInput,
@@ -38,7 +35,7 @@ export function fetchText(input: Request): Promise<string> {
 export function fetchToFile(
   input: RequestInput,
   destination: string,
-  options?: $Shape<{ onProgress: (progress: DownloadProgress) => mixed }>
+  options?: Partial<{ onProgress: (progress: DownloadProgress) => unknown }>
 ): Promise<string> {
   return fetch(input).then(response => {
     let downloaded = 0
@@ -46,11 +43,11 @@ export function fetchToFile(
 
     // with node-fetch, response.body will be a Node.js readable stream
     // rather than a browser-land ReadableStream
-    const inputStream: Readable = (response.body: any)
+    const inputStream = response.body
     const outputStream = createWriteStream(destination)
 
     // pass-through stream to report read progress
-    const onProgress = options?.onProgress
+    const onProgress = options && options.onProgress
     const progressReader = new Transform({
       transform(chunk, encoding, next) {
         downloaded += chunk.length

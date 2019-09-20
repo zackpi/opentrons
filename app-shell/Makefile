@@ -12,7 +12,7 @@ PORT ?= 8090
 src_dir := src
 lib_dir := lib
 src_ignore := "**/__tests__/**","**/__mocks__/**","**/__fixtures__/**"
-babel := babel $(src_dir) --root-mode upward --out-dir $(lib_dir) --ignore $(src_ignore)
+babel := babel $(src_dir) --root-mode upward --extensions ".ts" --out-dir $(lib_dir) --ignore $(src_ignore)
 
 # dep directories for production build
 # TODO(mc, 2018-08-07): figure out a better way to do this
