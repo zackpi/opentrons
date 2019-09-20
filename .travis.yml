@@ -134,6 +134,8 @@ jobs:
         - make install-js
       script:
         - make check-js
+        # TODO(mc, 2019-09-20): uncomment this check when we have TS files
+        # - make check-ts
 
     - # build the Opentrons App for POSIX (dev branch builds)
       <<: *app_stage_build

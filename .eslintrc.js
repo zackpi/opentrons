@@ -1,14 +1,14 @@
 'use strict'
 
 module.exports = {
+  root: true,
+
   parser: 'babel-eslint',
 
   extends: [
     'standard',
     'plugin:react/recommended',
-    'plugin:flowtype/recommended',
     'plugin:prettier/recommended',
-    'prettier/flowtype',
     'prettier/react',
     'prettier/standard',
   ],
@@ -36,21 +36,46 @@ module.exports = {
   settings: {
     react: {
       version: '16.8',
-      flowVersion: '0.102',
+      flowVersion: '0.106.2',
     },
   },
 
   overrides: [
     {
       files: [
-        '**/test/**.js',
-        '**/test-with-flow/**.js',
-        '**/__tests__/**.js',
-        '**/__mocks__/**.js',
+        '**/@(test|test-with-flow)/**/*.js',
+        '**/__tests__/**/*.@(js|ts|tsx)',
+        '**/__mocks__/**/*.@(js|ts|tsx)',
         'scripts/*.js',
       ],
       env: {
         jest: true,
+      },
+    },
+    {
+      files: ['**/*.js'],
+      extends: ['plugin:flowtype/recommended', 'prettier/flowtype'],
+    },
+    {
+      files: ['**/*.@(ts|tsx)'],
+      extends: [
+        'plugin:@typescript-eslint/recommended',
+        'prettier/@typescript-eslint',
+      ],
+      rules: {
+        '@typescript-eslint/no-use-before-define': [
+          'error',
+          { functions: false, classes: true },
+        ],
+        '@typescript-eslint/explicit-function-return-type': [
+          'error',
+          { allowExpressions: true, allowTypedFunctionExpressions: true },
+        ],
+        'no-useless-constructor': 'off',
+        '@typescript-eslint/no-useless-constructor': 'error',
+      },
+      globals: {
+        NodeJS: true,
       },
     },
   ],
