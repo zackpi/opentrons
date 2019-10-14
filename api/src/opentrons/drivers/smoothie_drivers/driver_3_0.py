@@ -92,7 +92,11 @@ GCODES = {'HOME': 'G28.2',
           'DISENGAGE_MOTOR': 'M18',
           'HOMING_STATUS': 'G28.6',
           'ACCELERATION': 'M204 S10000',
-          'WAIT': 'M400'}
+          'WAIT': 'M400',
+          'retract': 'M365.3',
+          'debounce': 'M365.2',
+          'max_travel': 'M365.1',
+          'home': 'M365.0'}
 
 # Number of digits after the decimal point for coordinates being sent
 # to Smoothie
@@ -483,12 +487,6 @@ class SmoothieDriver_3_0_0:
         if self.simulating:
             return {axis: data}
 
-        gcodes = {
-            'retract': 'M365.3',
-            'debounce': 'M365.2',
-            'max_travel': 'M365.1',
-            'home': 'M365.0'}
-
         res_msg = {axis: {}}
 
         for key, value in data.items():
@@ -497,11 +495,11 @@ class SmoothieDriver_3_0_0:
                 cmd = f' O{value}'
             else:
                 cmd = f' {axis}{value}'
-            res = self._send_command(gcodes[key] + cmd)
+            res = self._send_command(GCODES[key.lower()] + cmd)
             if res is None:
                 raise ValueError(
                     f'{key} was not updated to {value} on {axis} axis')
-            res_msg[axis][key] = value
+            res_msg[axis][key.lower()] = value
 
         return res_msg
 

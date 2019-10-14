@@ -1,0 +1,6 @@
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Write -> b'M203.1 A125 B40 C40 X600 Y400 Z125\r\n\r\n'
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Read <- b'M203.1 A125 B40 C40 X600 Y400 Z125\r\n\r\nWARNING: actuator 4 rate exceeds base_stepping_frequency * ..._steps_per_mm: 128000.000000, setting to 31.000000\nWARNING: actuator 5 rate exceeds base_stepping_frequency * ..._steps_per_mm: 128000.000000, setting to 31.000000\nok\r\nok\r\n'
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Write -> b'M400\r\n\r\n'
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Read <- b'M400\ro\n\rk\n\r\nok\r\nok\r\n'
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Write -> b'M907 A0.1 B0.05 C0.05 X0.3 Y0.3 Z0.1 G4P0.005\r\n\r\n'
+Oct 03 19:31:18 OT2CEP20190220A01 opentrons-api-serial[326]: smoothie: Read <- b'M907 A0.1 B0.05 C0.05 X0.3 Y0.3 Z0.1 G4P0.005\r\n\r\nok\r\nok\r\n'
