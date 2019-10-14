@@ -231,6 +231,7 @@ class Thermocycler:
         self._interrupt_cb = interrupt_callback
         self._lid_target = None
         self._lid_temp = None
+        self._ongoing_command = None
 
     async def connect(self, port: str) -> 'Thermocycler':
         self.disconnect()
@@ -272,10 +273,14 @@ class Thermocycler:
         self.lid_status = 'closed'
         return self.lid_status
 
+    # TODO: IMMEDIATELY ongoing command should be a dict with some type of command
+    #  (or event that will lead to completion)
+    #  as key and futures as the value
     async def set_temperature(self,
                               temp: float,
                               hold_time: float = None,
-                              ramp_rate: float = None) -> None:
+                              ramp_rate: float = None) -> asyncio.Future:
+        self._ongoing_command = self._loop.create_future()
         if ramp_rate:
             ramp_cmd = '{} S{}'.format(GCODES['SET_RAMP_RATE'], ramp_rate)
             await self._write_and_wait(ramp_cmd)
@@ -287,6 +292,7 @@ class Thermocycler:
             retries += 1
             if retries > TEMP_UPDATE_RETRIES:
                 break
+        return self._ongoing_command
 
     async def set_lid_temperature(self, temp: float) -> None:
         if temp is None:
@@ -328,6 +334,11 @@ class Thermocycler:
         self._current_temp = val_dict['C']
         self._target_temp = val_dict['T']
         self._hold_time = val_dict['H']
+
+        if self.status == 'holding at target' and self._ongoing_command
+                and not self._ongoing_command.done():
+            self._ongoing_command.set_result()
+            self._ongoing_command = None
 
     def _lid_temp_status_callback(self, lid_temp_res):
         # Payload is shaped like `T:95.0 C:77.4` where T is the

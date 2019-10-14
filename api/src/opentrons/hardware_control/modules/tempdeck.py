@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures
 from threading import Thread, Event
 from typing import Union
 from opentrons.drivers.temp_deck import TempDeck as TempDeckDriver
@@ -119,6 +120,7 @@ class TempDeck(mod_abc.AbstractModule):
         self._port = port
         self._device_info = None
         self._poller = None
+        self._ongoing_command = None
 
     def set_temperature(self, celsius):
         """
@@ -128,7 +130,8 @@ class TempDeck(mod_abc.AbstractModule):
         temperature display. Any input outside of this range will be clipped
         to the nearest limit
         """
-        return self._driver.set_temperature(celsius)
+        self._ongoing_command = self._loop.create_future()
+        self._driver.set_temperature(celsius)
 
     def deactivate(self):
         """ Stop heating/cooling and turn off the fan """

@@ -1,6 +1,8 @@
 import asyncio
 import contextlib
 import logging
+import time
+import concurrent.futures
 from typing import (Any, Dict, Iterator, List,
                     Optional, Sequence, Set, Tuple, Union)
 from opentrons import types, hardware_control as hc, commands as cmds
@@ -535,6 +537,22 @@ class ProtocolContext(CommandPublisher):
         :param str msg: A message to echo back to connected clients.
         """
         self._hw_manager.hardware.pause()
+
+    # TODO: IMMEDIATELY make this more than just a future add some metadata
+    # TODO: IMMEDIATELY make admittedly shitty collect implementation that allows
+    # for multiple futures passed in as params
+    def hold_until(self, future):
+        """ Pause execution of the protocol until given condition is true.
+
+        This function returns immediately, but the next function call that
+        is blocked by a paused robot (anything that involves moving) will
+        not return until :py:meth:`resume` is called.
+
+        :param future: An instance of :py:class:`asyncio.Future`
+        """
+        while not future.done()
+            time.sleep(0.1)
+
 
     @cmds.publish.both(command=cmds.resume)
     def resume(self):
@@ -2063,13 +2081,30 @@ class TemperatureModuleContext(ModuleContext):
 
     @cmds.publish.both(command=cmds.tempdeck_set_temp)
     def set_temperature(self, celsius: float):
-        """ Set the target temperature, in C.
+        """ Set the temperature, in C.
 
+        Block until the module reaches its setpoint.
         Must be between 4 and 95C based on Opentrons QA.
 
         :param celsius: The target temperature, in C
         """
-        return self._module.set_temperature(celsius)
+        ret_value = self._module.set_temperature(celsius)
+        self._module.wait_for_temp()
+        return ret_value
+
+    @cmds.publish.both(command=cmds.tempdeck_set_temp)
+    def start_set_temperature(self, celsius: float):
+        """ Begin moving to target temperature, in C.
+
+        Does not block, will continue
+        Must be between 4 and 95C based on Opentrons QA.
+
+        :param celsius: The target temperature, in C
+        :returns: an instance of :py:class:`concurrent.futures.Future`
+                 that completes as soon as target temp reached.
+        """
+        self._module.set_temperature(celsius)
+        return self._module.wait_for_temp
 
     @cmds.publish.both(command=cmds.tempdeck_deactivate)
     def deactivate(self):
@@ -2257,6 +2292,18 @@ class ThermocyclerContext(ModuleContext):
             after ``temperature`` is reached.
 
         """
+        set_temp_future = self._module.set_temperature(
+                temperature=temperature,
+                hold_time_seconds=hold_time_seconds,
+                hold_time_minutes=hold_time_minutes,
+                ramp_rate=ramp_rate)
+        self._ctx.hold_until(set_temp_future)
+
+    def start_set_block_temperature(self,
+                                    temperature: float,
+                                    hold_time_seconds: float = None,
+                                    hold_time_minutes: float = None,
+                                    ramp_rate: float = None):
         return self._module.set_temperature(
                 temperature=temperature,
                 hold_time_seconds=hold_time_seconds,
