@@ -1,31 +1,30 @@
 import argparse
-# import difflib
-# import os
+import difflib
 import re
 import sys
 
 from opentrons.drivers.smoothie_drivers.driver_3_0 import GCODES
-# from itertools import groupby
 from pathlib import Path
-
+from typing import TextIO
 
 GCODES = dict((y, x) for x, y in GCODES.items())
 
 parser_args = {
-    'serial-log': ['smoothie: Write', 'opentrons-api-serial'],
-    'api-log': ['help!']
+    'serial': ['smoothie: Write', 'opentrons-api-serial'],
+    'api': ['opentrons-api']
     }
 
 
-def get_str_list(path_str, substrings: list):
-    with open(Path(path_str)) as file:
-        content_str = file.readlines()
+def get_str_list(log_file, substrings: list):
+    content_str = log_file.read().decode('utf-8')
     filtered_contents = list(
         filter(lambda line: all(substr in line for substr in substrings),
                content_str))
+    print(filtered_contents)
     for line in filtered_contents:
         new_line = line.split('smoothie: Write -> b')[1].rstrip()
         formatted_line = new_line.strip("'").strip('\\r\\n\\r\\n')
+        print(formatted_line)
         yield interpret_gcode(formatted_line)
 
 
@@ -36,39 +35,33 @@ def interpret_gcode(line):
     return line
 
 
-# all_files = list(filter(lambda x: x.endswith('.txt'), sorted(os.listdir())))
-# grouped_logs = {
-#     key: list(group)
-#     for key, group in groupby(all_files, lambda y: y.split('_')[0])}
-#
-# for key, value in grouped_logs.items():
-#     contents = list(get_str_list(value[0], ))
-#     contents2 = list(get_str_list(value[1], ))
-#     output_file = open(f"{key}.html", "w")
-#     hd = difflib.HtmlDiff()
-#     output_file.write(
-#         hd.make_file(contents, contents2, context=False))
-#     output_file.close()
+def compare(log_1: TextIO,
+            log_2: TextIO,
+            log_type: str):
+    # print(log_1)
+    contents_1 = list(get_str_list(log_1, parser_args[log_type]))
+    contents_2 = list(get_str_list(log_2, parser_args[log_type]))
+    print(contents_1)
+    print(contents_2)
+    # output_file = open(f"{log_type}.html", "w")
+    # hd = difflib.HtmlDiff()
+    # output_file.write(
+    #     hd.make_file(contents_1, contents_2, context=False))
+    # output_file.close()
 
 
 def get_arguments(
         parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
-    parser.add_argument("path1")
-    parser.add_argument("path2")
-    # parser.add_argument(
-    #     '-l', '--log-level',
-    #     choices=['debug', 'info', 'warning', 'error', 'none'],
-    #     default='warning',
-    #     help=    #     'utility as part of an automated workflow.')
-    # parser.add_argument(
-    #     '-v', '--version', action='version',
-    #     version=f'%(prog)s {opentrons.__version__}',
-    #     help='Print the opentrons package version and exit')
-    # parser.add_argument(
-    #     '-o', '--output', action='store',
-    #     help='What to output during simulations',
-    #     choices=['runlog', 'nothing'],
-    #     default='runlog')
+    parser.add_argument(
+        'log_1', type=argparse.FileType('rb'),
+        help='The first log file to compare')
+    parser.add_argument(
+        'log_2', type=argparse.FileType('rb'),
+        help='The second log file to compare')
+    parser.add_argument(
+        'log_type', action='store',
+        choices=['serial', 'api'],
+        help='Type of logs')
     return parser
 
 
@@ -78,30 +71,9 @@ def main() -> int:
     parser = get_arguments(parser)
     args = parser.parse_args()
 
-    print(f'This is path 1: {args.path1}')
-    print(f'This is path 2: {args.path2}')
-    #
-    # args = parser.parse_args()
-    # runlog, maybe_bundle = simulate(
-    #     args.protocol,
-    #     args.protocol.name,
-    #     getattr(args, 'custom_labware_path', []),
-    #     getattr(args, 'custom_data_path', [])
-    #     + getattr(args, 'custom_data_file', []),
-    #     log_level=args.log_level)
-    #
-    # if maybe_bundle:
-    #     bundle_name = getattr(args, 'bundle', None)
-    #     if bundle_name == args.protocol.name:
-    #         raise RuntimeError(
-    #             'Bundle path and input path must be different')
-    #     bundle_dest = _get_bundle_dest(
-    #         bundle_name, 'PROTOCOL.ot2.zip', args.protocol.name)
-    #     if bundle_dest:
-    #         bundle.create_bundle(maybe_bundle, bundle_dest)
-    #
-    # if args.output == 'runlog':
-    #     print(format_runlog(runlog))
+    compare(args.log_1,
+            args.log_2,
+            args.log_type)
 
     return 0
 

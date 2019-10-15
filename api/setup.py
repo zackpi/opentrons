@@ -155,6 +155,7 @@ if __name__ == "__main__":
             'console_scripts': [
                 'opentrons_simulate = opentrons.simulate:main',
                 'opentrons_execute = opentrons.execute:main',
+                'opentrons_compare_logs = opentrons.drivers.log_parser:main'
             ]
         },
         project_urls={
