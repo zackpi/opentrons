@@ -12,6 +12,7 @@ from typing import Optional, Mapping
 from serial.serialutil import SerialException  # type: ignore
 from opentrons.drivers import serial_communication, utils
 from opentrons.drivers.serial_communication import SerialNoResponse
+from opentrons.hardware_control.modules import mod_abc
 
 
 log = logging.getLogger(__name__)
@@ -220,7 +221,9 @@ class TCPoller(threading.Thread):
 
 
 class Thermocycler:
-    def __init__(self, interrupt_callback):
+    def __init__(self,
+                 interrupt_callback: mod_abc.InterruptCallback,
+                 loop: asyncio.AbstractEventLoop):
         self._poller = None
         self._update_thread = None
         self._current_temp = None
@@ -229,6 +232,7 @@ class Thermocycler:
         self._hold_time = None
         self._lid_status = None
         self._interrupt_cb = interrupt_callback
+        self._loop = loop
         self._lid_target = None
         self._lid_temp = None
         self._ongoing_command = None
@@ -292,6 +296,7 @@ class Thermocycler:
             retries += 1
             if retries > TEMP_UPDATE_RETRIES:
                 break
+        log.info("\n\n\n ongoing command future {}".format(self._ongoing_command))
         return self._ongoing_command
 
     async def set_lid_temperature(self, temp: float) -> None:
@@ -335,9 +340,10 @@ class Thermocycler:
         self._target_temp = val_dict['T']
         self._hold_time = val_dict['H']
 
-        if self.status == 'holding at target' and self._ongoing_command
-                and not self._ongoing_command.done():
-            self._ongoing_command.set_result()
+        if self.status == 'holding at target' and \
+           self._ongoing_command and \
+           not self._ongoing_command.done():
+            self._ongoing_command.set_result(None)
             self._ongoing_command = None
 
     def _lid_temp_status_callback(self, lid_temp_res):

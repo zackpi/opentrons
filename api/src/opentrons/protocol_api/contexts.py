@@ -550,7 +550,7 @@ class ProtocolContext(CommandPublisher):
 
         :param future: An instance of :py:class:`asyncio.Future`
         """
-        while not future.done()
+        while not future.done():
             time.sleep(0.1)
 
 

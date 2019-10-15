@@ -9,7 +9,7 @@ MODULE_LOG = logging.getLogger(__name__)
 
 
 class SimulatingDriver:
-    def __init__(self):
+    def __init__(self, loop):
         self._target_temp = None
         self._ramp_rate = None
         self._hold_time = None
@@ -18,6 +18,7 @@ class SimulatingDriver:
         self._lid_status = 'open'
         self._lid_target = None
         self._lid_heating_active = False
+        self._loop = loop
 
     async def open(self):
         # TODO: BC 2019-07-11 once safe threshold is established in
@@ -84,6 +85,9 @@ class SimulatingDriver:
         self._hold_time = hold_time
         self._ramp_rate = ramp_rate
         self._active = True
+        future = self._loop.create_future()
+        future.set_result(None)
+        return future
 
     async def set_lid_temperature(self, temp: Optional[float]):
         """ Set the lid temperature in deg Celsius """
@@ -136,12 +140,13 @@ class Thermocycler(mod_abc.AbstractModule):
     @staticmethod
     def _build_driver(
             simulating: bool,
-            interrupt_cb: Callable[[str], None] = None)\
-            -> Union['SimulatingDriver', 'ThermocyclerDriver']:
+            loop: asyncio.AbstractEventLoop,
+            interrupt_cb: Callable[[str], None] = None
+            ) -> Union['SimulatingDriver', 'ThermocyclerDriver']:
         if simulating:
-            return SimulatingDriver()
+            return SimulatingDriver(loop)
         else:
-            return ThermocyclerDriver(interrupt_cb)
+            return ThermocyclerDriver(interrupt_cb, loop)
 
     def __init__(self,
                  port: str,
@@ -149,12 +154,14 @@ class Thermocycler(mod_abc.AbstractModule):
                  simulating: bool = False,
                  loop: asyncio.AbstractEventLoop = None) -> None:
         self._interrupt_cb = interrupt_callback
-        self._driver = self._build_driver(simulating, interrupt_callback)
 
         if None is loop:
             self._loop = asyncio.get_event_loop()
         else:
             self._loop = loop
+
+        self._driver = self._build_driver(simulating,
+                                          self._loop, interrupt_callback)
 
         self._port = port
         self._device_info = None
