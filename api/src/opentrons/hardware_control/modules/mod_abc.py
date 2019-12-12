@@ -13,8 +13,10 @@ class AbstractModule(abc.ABC):
     @abc.abstractmethod
     async def build(cls,
                     port: str,
+                    run_flag: asyncio.Event,
                     interrupt_callback,
-                    simulating: bool = False) -> 'AbstractModule':
+                    simulating: bool = False,
+                    loop: asyncio.AbstractEventLoop = None) -> 'AbstractModule':
         """ Modules should always be created using this factory.
 
         This lets the (perhaps blocking) work of connecting to and initializing

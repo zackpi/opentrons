@@ -2,7 +2,7 @@ import asyncio
 import logging
 from glob import glob
 import re
-from typing import List, Optional
+from typing import List, Optional, Callable
 from collections import namedtuple
 
 from opentrons.config import IS_ROBOT, IS_LINUX
@@ -38,9 +38,10 @@ async def build(
         port: str,
         which: str,
         simulating: bool,
-        interrupt_callback) -> AbstractModule:
+        run_flag: asyncio.Event,
+        interrupt_callback: Callable) -> AbstractModule:
     return await MODULE_TYPES[which].build(
-        port, interrupt_callback=interrupt_callback, simulating=simulating)
+        port, run_flag=run_flag, interrupt_callback=interrupt_callback, simulating=simulating)
 
 
 def get_module_at_port(port: str) -> Optional[ModuleAtPort]:
