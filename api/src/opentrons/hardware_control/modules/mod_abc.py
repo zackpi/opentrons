@@ -1,4 +1,5 @@
 import abc
+import asyncio
 from typing import Dict, Callable, Any, Tuple, Awaitable
 
 InterruptCallback = Callable[[str], None]
@@ -13,8 +14,8 @@ class AbstractModule(abc.ABC):
     @abc.abstractmethod
     async def build(cls,
                     port: str,
-                    run_flag: asyncio.Event,
-                    interrupt_callback,
+                    gate_keeper: asyncio.Event = None,
+                    interrupt_callback=None,
                     simulating: bool = False,
                     loop: asyncio.AbstractEventLoop = None) -> 'AbstractModule':
         """ Modules should always be created using this factory.

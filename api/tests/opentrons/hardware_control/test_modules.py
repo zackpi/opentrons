@@ -68,7 +68,7 @@ async def test_module_update_integration(monkeypatch, loop,
     monkeypatch.setattr(api, 'attached_modules',
                         mock_attached_modules)
 
-    async def mock_build_module(port, model, run_flag, callback):
+    async def mock_build_module(port, model, gate_keeper, callback):
         return await hardware_control.modules.build(port,
                                                     model,
                                                     True,

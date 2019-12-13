@@ -59,14 +59,14 @@ class MagDeck(mod_abc.AbstractModule):
     @classmethod
     async def build(cls,
                     port: str,
-                    run_flag: asyncio.Event,
+                    gate_keeper: asyncio.Event,
                     interrupt_callback: Callable,
                     simulating=False,
                     loop: asyncio.AbstractEventLoop = None):
         # MagDeck does not currently use interrupts, so the callback is not
         # passed on
         mod = cls(port=port,
-                  run_flag=run_flag,
+                  gate_keeper=gate_keeper,
                   simulating=simulating,
                   loop=loop)
         await mod._connect()
@@ -94,7 +94,7 @@ class MagDeck(mod_abc.AbstractModule):
 
     def __init__(self,
                  port: str,
-                 run_flag: asyncio.Event,
+                 gate_keeper: asyncio.Event,
                  simulating: bool,
                  loop: asyncio.AbstractEventLoop = None) -> None:
         self._port = port
@@ -108,7 +108,7 @@ class MagDeck(mod_abc.AbstractModule):
         else:
             self._loop = loop
 
-        self._run_flag = run_flag
+        self._gate_keeper = gate_keeper
 
         self._device_info = None
 
