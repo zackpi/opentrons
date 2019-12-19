@@ -1,6 +1,7 @@
 import abc
 import asyncio
 from typing import Dict, Callable, Any, Tuple, Awaitable
+from ..types import PauseManager
 
 InterruptCallback = Callable[[str], None]
 UploadFunction = Callable[[str, str, Dict[str, Any]],
@@ -14,7 +15,7 @@ class AbstractModule(abc.ABC):
     @abc.abstractmethod
     async def build(cls,
                     port: str,
-                    gate_keeper: asyncio.Event = None,
+                    pause_manager: PauseManager,
                     interrupt_callback=None,
                     simulating: bool = False,
                     loop: asyncio.AbstractEventLoop = None) -> 'AbstractModule':
@@ -28,6 +29,12 @@ class AbstractModule(abc.ABC):
     @abc.abstractmethod
     def deactivate(self):
         """ Deactivate the module. """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def pause_manager(self) -> str:
+        """ Return bound instance of PauseManager"""
         pass
 
     @property

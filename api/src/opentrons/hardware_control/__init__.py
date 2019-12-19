@@ -24,7 +24,7 @@ from opentrons.config import robot_configs, pipette_config
 from .pipette import Pipette
 from .controller import Controller
 from . import modules
-from .types import Axis, HardwareAPILike, CriticalPoint, GateKeeper
+from .types import Axis, HardwareAPILike, CriticalPoint, PauseManager
 
 
 mod_log = logging.getLogger(__name__)
@@ -90,7 +90,7 @@ class API(HardwareAPILike):
             self._loop = asyncio.get_event_loop()
         else:
             self._loop = loop
-        self._gate_keeper = GateKeeper(self._loop, self.is_simulator_sync)
+        self._pause_manager = PauseManager(self._loop, self.is_simulator_sync)
 
         self._callbacks: set = set()
         # {'X': 0.0, 'Y': 0.0, 'Z': 0.0, 'A': 0.0, 'B': 0.0, 'C': 0.0}
@@ -380,8 +380,8 @@ class API(HardwareAPILike):
         return self._attached_modules
 
     @property
-    def gate_keeper(self):
-        return self._gate_keeper
+    def pause_manager(self):
+        return self._pause_manager
 
     @_log_call
     async def update_firmware(
@@ -428,7 +428,7 @@ class API(HardwareAPILike):
         :py:meth:`resume`.
         """
         self._backend.pause()
-        self._loop.call_soon_threadsafe(self.gate_keeper.close_gate)
+        self._loop.call_soon_threadsafe(self.pause_manager.pause)
 
     def pause_with_message(self, message):
         self._log.warning('Pause with message: {}'.format(message))
@@ -442,7 +442,7 @@ class API(HardwareAPILike):
         Resume motion after a call to :py:meth:`pause`.
         """
         self._backend.resume()
-        self._loop.call_soon_threadsafe(self.gate_keeper.open_gate)
+        self._loop.call_soon_threadsafe(self.pause_manager.pause)
 
     @_log_call
     def halt(self):
@@ -470,7 +470,7 @@ class API(HardwareAPILike):
         """
         self._backend.halt()
         self._log.info("Recovering from halt")
-        self._loop.call_soon_threadsafe(self.gate_keeper.close_gate)
+        self._loop.call_soon_threadsafe(self.pause_manager.pause)
         await self.reset()
         await self.home()
 
@@ -1404,7 +1404,7 @@ class API(HardwareAPILike):
             new_instance = await self._backend.build_module(
                     port=port,
                     model=name,
-                    gate_keeper=self.gate_keeper,
+                    pause_manager=self.pause_manager,
                     interrupt_callback=self.pause_with_message)
             self._log.info(f"{port}")
             self._log.info(f"{name}")
