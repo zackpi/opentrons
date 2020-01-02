@@ -107,6 +107,7 @@ class ProtocolContext(CommandPublisher):
 
         self._hw_manager = HardwareManager(hardware)
         self._log = MODULE_LOG.getChild(self.__class__.__name__)
+        self._log.info(f"CONTEXT INIT hardware manager: {self._hw_manager}")
         self._commands: List[str] = []
         self._unsubscribe_commands = None
         self.clear_commands()
@@ -274,6 +275,7 @@ class ProtocolContext(CommandPublisher):
         :py:class:`.ProtocolContext`; :py:meth:`disconnect` simply creates
         a new simulator and replaces the current hardware with it.
         """
+        self._log.info(f"Context Connect hardware: {hardware}")
         self._hw_manager.set_hw(hardware)
         self._hw_manager.hardware.cache_instruments()
 
@@ -432,7 +434,7 @@ class ProtocolContext(CommandPublisher):
                                     resolved_location))
         hc_mod_instance = None
         hw = self._hw_manager.hardware._api._backend
-        mod_class = {
+        ctx_mod_class = {
             'magdeck': MagneticModuleContext,
             'tempdeck': TemperatureModuleContext,
             'thermocycler': ThermocyclerContext}[resolved_name]
@@ -442,15 +444,18 @@ class ProtocolContext(CommandPublisher):
                 break
 
         if isinstance(hw, Simulator) and hc_mod_instance is None:
-            mod_type = {
+            hc_mod_class = {
                 'magdeck': modules.magdeck.MagDeck,
                 'tempdeck': modules.tempdeck.TempDeck,
                 'thermocycler': modules.thermocycler.Thermocycler
                 }[resolved_name]
-            hc_mod_instance = adapters.SynchronousAdapter(mod_type(
-                port='', simulating=True, loop=self._loop))
+            hc_mod_instance = adapters.SynchronousAdapter(hc_mod_class(
+                    port='',
+                    pause_manager=self._hw_manager.hardware.pause_manager,
+                    simulating=True,
+                    loop=self._loop))
         if hc_mod_instance:
-            mod_ctx = mod_class(self,
+            mod_ctx = ctx_mod_class(self,
                                 hc_mod_instance,
                                 geometry,
                                 self.api_version,
@@ -2241,6 +2246,7 @@ class ThermocyclerContext(ModuleContext):
                               self._ctx.loaded_instruments.items()
                               if instr is not None]
         try:
+            MODULE_LOG.info(f"TC context prepare for lid move ctx: {self._ctx}, hw_manager: {self._ctx._hw_manager}, hw_manager.hardware: {self._ctx._hw_manager.hardware}, loaded instr: {loaded_instruments}")
             instr = loaded_instruments[0]
         except IndexError:
             MODULE_LOG.warning(
@@ -2270,6 +2276,7 @@ class ThermocyclerContext(ModuleContext):
     @requires_version(2, 0)
     def open_lid(self):
         """ Opens the lid"""
+        MODULE_LOG.info(f"TC context open lid {self._module}")
         self._prepare_for_lid_move()
         self._geometry.lid_status = self._module.open()
         return self._geometry.lid_status
