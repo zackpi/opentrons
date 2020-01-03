@@ -449,17 +449,21 @@ class ProtocolContext(CommandPublisher):
                 'tempdeck': modules.tempdeck.TempDeck,
                 'thermocycler': modules.thermocycler.Thermocycler
                 }[resolved_name]
+            MODULE_LOG.info(f'Load_module hc_mod_instance: {hc_mod_instance}, hc_mod_class: {hc_mod_class}')
             hc_mod_instance = adapters.SynchronousAdapter(hc_mod_class(
                     port='',
                     pause_manager=self._hw_manager.hardware.pause_manager,
                     simulating=True,
                     loop=self._loop))
+            MODULE_LOG.info(f'Load_module after hc_mod_instance: {hc_mod_instance}')
         if hc_mod_instance:
             mod_ctx = ctx_mod_class(self,
                                 hc_mod_instance,
                                 geometry,
                                 self.api_version,
                                 self._loop)
+            MODULE_LOG.info(f'Load_module after context mod_ctx: {mod_ctx}')
+            MODULE_LOG.info(f'Load_module after hc_mod_instance: {hc_mod_instance}')
         else:
             raise RuntimeError(
                 f'Could not find specified module: {resolved_name}')
