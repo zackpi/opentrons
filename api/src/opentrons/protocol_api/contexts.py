@@ -2242,6 +2242,7 @@ class ThermocyclerContext(ModuleContext):
                  at_version: APIVersion,
                  loop: asyncio.AbstractEventLoop) -> None:
         self._module = hw_module
+        MODULE_LOG.info(f"TC context init hw_module: {hw_module}")
         self._loop = loop
         super().__init__(ctx, geometry, at_version)
 
@@ -2282,6 +2283,7 @@ class ThermocyclerContext(ModuleContext):
         """ Opens the lid"""
         MODULE_LOG.info(f"TC context open lid {self._module}")
         self._prepare_for_lid_move()
+        MODULE_LOG.info(f"TC context after prepare for lid move {self._module}")
         self._geometry.lid_status = self._module.open()
         return self._geometry.lid_status
 
