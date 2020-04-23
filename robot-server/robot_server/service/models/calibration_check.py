@@ -7,7 +7,7 @@ from opentrons.hardware_control.types import Axis
 from robot_server.service.models.control import PointField, Point
 
 
-class SessionTypes(str, Enum):
+class SessionType(str, Enum):
     """The available session types"""
     check = 'check'
 
@@ -73,8 +73,6 @@ class CalibrationSessionStatus(BaseModel):
     """
     instruments: Dict[str, AttachedPipette]
     currentStep: str = Field(..., description="Current step of session")
-    nextSteps: Dict[str, Dict[str, Dict[str, Any]]] = \
-        Field(..., description="Next Available Step in Session")
     labware: List[LabwareStatus]
 
     class Config:

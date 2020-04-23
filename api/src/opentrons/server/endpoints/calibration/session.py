@@ -1,7 +1,7 @@
 import typing
 from uuid import uuid4, UUID
 from enum import Enum
-from dataclasses import dataclass, asdict, field, fields
+from dataclasses import dataclass, asdict, field
 
 from opentrons.protocol_api.labware import Well
 from opentrons.types import Mount, Point, Location
@@ -10,7 +10,6 @@ from opentrons.hardware_control.types import Axis
 
 from .constants import LOOKUP_LABWARE, TipAttachError
 from .util import StateMachine, WILDCARD
-from .models import AttachedPipette
 from opentrons.hardware_control import ThreadManager
 from opentrons.protocol_api import labware, geometry
 
@@ -40,11 +39,7 @@ class PipetteStatus:
     plunger_axis: Axis
     pipette_uuid: Axis
     has_tip: bool
-    tiprack_id: UUID
-
-    @classmethod
-    def list_fields(cls):
-        return [obj.name for obj in fields(cls)]
+    tiprack_id: typing.Optional[UUID]
 
 
 @dataclass
@@ -110,6 +105,7 @@ class CalibrationSession:
         await hardware.cache_instruments()
         await hardware.set_lights(rails=True)
         await hardware.home()
+        return cls(hardware=hardware)
 
     @staticmethod
     def _key_by_uuid(new_pipettes: typing.Dict) -> typing.Dict:
@@ -232,31 +228,25 @@ class CalibrationSession:
     def pipettes(self) -> typing.Dict[Mount, Pipette.DictType]:
         return self.hardware.attached_instruments
 
-    @property
-    def pipette_status(self) -> typing.Dict[str, AttachedPipette]:
+    def pipette_status(self) -> typing.Dict[str, PipetteStatus]:
         """
         Public property to help format the current labware status of a given
         session for the client.
-
-        Note:
-        Pydantic restricts dictionary keys that can be evaluated. Since
-        the session pipettes dictionary has a UUID as a key, we must first
-        convert the UUID to a hex string.
         """
-        # pydantic restricts dictionary keys that can be evaluated. Since
-        # the session pipettes dictionary has a UUID as a key, we must first
-        # convert the UUID to a hex string.
-        fields = PipetteStatus.list_fields()
         to_dict = {}
-        for id, data in self._relate_mount.items():
+        for inst_id, data in self._relate_mount.items():
             pip = self.get_pipette(data['mount'])
-            tip_id = data['tiprack_id']
-            temp_dict = {
-                key: value for key, value in pip.items() if key in fields
-            }
-            if tip_id:
-                temp_dict['tiprack_id'] = str(tip_id)
-            to_dict[str(id)] = AttachedPipette(**temp_dict)
+            p = PipetteStatus(
+                model=pip['model'],
+                name=pip['name'],
+                tip_length=pip['tip_length'],
+                mount_axis=pip['mount_axis'],
+                plunger_axis=pip['plunger_axis'],
+                pipette_uuid=pip['pipette_uuid'],
+                has_tip=pip['has_tip'],
+                tiprack_id=data['tiprack_id'],
+            )
+            to_dict[str(inst_id)] = p
         return to_dict
 
     @property
