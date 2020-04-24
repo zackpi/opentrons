@@ -62,13 +62,17 @@ async def get_session(
     return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session', response_model_exclude_unset=True)
+@router.post('/{session_type}/session',
+             response_model=CalibrationSessionStatusResponse,
+             status_code=http_status_codes.HTTP_201_CREATED,
+             response_model_exclude_unset=True)
 async def create_session(
+        request: Request,
         session_type: model.SessionType,
         session_manager: SessionManager = Depends(
-            get_calibration_session_manager)) -> CalibrationSessionStatusResponse:
+            get_calibration_session_manager))\
+        -> CalibrationSessionStatusResponse:
     pass
-
 
 # @router.post('/{session_type}/session/move')
 # async def move(session_type: model.SessionType,
@@ -77,60 +81,84 @@ async def create_session(
 #     pass
 
 
-@router.post('/{session_type}/session/loadLabware', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/loadLabware',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def load_labware(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/preparePipette', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/preparePipette',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def prepare_pipette(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/pickUpTip', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/pickUpTip',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def pick_up_tip(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/invalidateTip', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/invalidateTip',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def invalidate_tip(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/confirmTip', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/confirmTip',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def confirm_tip(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/jog', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/jog',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def jog(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.post('/{session_type}/session/confirmStep', response_model_exclude_unset=True)
+@router.post('/{session_type}/session/confirmStep',
+             response_model=CalibrationSessionStatusResponse,
+             response_model_exclude_unset=True)
 async def confirm_step(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
-@router.delete('/{session_type}/session', response_model_exclude_unset=True)
+@router.delete('/{session_type}/session',
+               response_model=CalibrationSessionStatusResponse,
+               response_model_exclude_unset=True)
 async def delete_session(
+        request: Request,
         session_type: model.SessionType,
         session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    pass
+    return create_session_response(session, request)
 
 
 TRIGGER_TO_NAME = {
@@ -175,17 +203,13 @@ def create_session_response(session: CheckCalibrationSession,
                             request: Request) \
         -> CalibrationSessionStatusResponse:
     """Create session response"""
-    current_state = session.current_state_name
-    potential_triggers = session.get_potential_triggers()
-    lw_status = session.labware_status.values()
-
-    links = create_next_step_links(session, potential_triggers, request.app)
+    links = create_next_step_links(session,
+                                   session.get_potential_triggers(),
+                                   request.app)
     instruments = {
         k: model.AttachedPipette(model=v.model,
                                  name=v.name,
                                  tip_length=v.tip_length,
-                                 mount_axis=v.mount_axis,
-                                 plunger_axis=v.plunger_axis,
                                  has_tip=v.has_tip,
                                  tiprack_id=v.tiprack_id)
         for k, v in session.pipette_status().items()
@@ -193,8 +217,11 @@ def create_session_response(session: CheckCalibrationSession,
 
     status = model.CalibrationSessionStatus(
         instruments=instruments,
-        currentStep=current_state,
-        labware=[model.LabwareStatus(**data) for data in lw_status])
+        currentStep=session.current_state_name,
+        labware=[
+            model.LabwareStatus(**data) for data in
+            session.labware_status.values()
+        ])
     return CalibrationSessionStatusResponse(
         data=CalibrationSessionStatusResponseM(
             attributes=status,

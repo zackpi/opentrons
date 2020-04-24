@@ -15,22 +15,21 @@ from robot_server.service.dependencies import get_hardware,\
 from robot_server.service.models.calibration_check import SessionType
 
 
-#
-# @pytest.fixture
-# def mock_cal_session():
-#     m = MagicMock(spec=CheckCalibrationSession)
-#
-#     m.current_state_name = CalibrationCheckState.preparingPipette
-#     m.get_potential_triggers.return_value = {
-#         CalibrationCheckTrigger.jog,
-#         CalibrationCheckTrigger.pick_up_tip,
-#         CalibrationCheckTrigger.exit
-#     }
-#
-#     get_calibration_session_manager().sessions[SessionType.check] = m
-#     yield m
-#     del get_calibration_session_manager().sessions[SessionType.check]
-#
+@pytest.fixture
+def mock_cal_session():
+    m = MagicMock(spec=CheckCalibrationSession)
+
+    m.current_state_name = CalibrationCheckState.preparingPipette
+    m.get_potential_triggers.return_value = {
+        CalibrationCheckTrigger.jog,
+        CalibrationCheckTrigger.pick_up_tip,
+        CalibrationCheckTrigger.exit
+    }
+
+    get_calibration_session_manager().sessions[SessionType.check] = m
+    yield m
+    del get_calibration_session_manager().sessions[SessionType.check]
+
 
 @pytest.mark.parametrize(
     argnames=("path", "method",),
@@ -60,28 +59,54 @@ def test_get_api_needs_session(api_client, path, method):
     }
 
 
-def test_get_session(cal_check_session, cal_check_api_client):
-    resp = cal_check_api_client.get("/calibration/check/session")
+@pytest.mark.parametrize(
+    argnames=("path", "method",),
+    argvalues=(
+            ("session", "GET",),
+            ("session/loadLabware", "POST",),
+            ("session/preparePipette", "POST"),
+            ("session/pickUpTip", "POST"),
+            ("session/invalidateTip", "POST"),
+            ("session/confirmTip", "POST"),
+            ("session/jog", "POST"),
+            ("session/confirmStep", "POST"),
+            ("session", "DELETE"),
+    )
+)
+def test_api_return_session_status(api_client, mock_cal_session, path, method):
+    """Test that each endpoint returns the session status"""
+    resp = api_client.request(method=method, url=f"/calibration/check/{path}")
 
     assert resp.status_code == 200
+    # Result of mock data
     assert resp.json() == {
-        "links": {
-
+        'data': {
+            'attributes': {
+                'currentStep': 'preparingPipette',
+                'instruments': {},
+                'labware': []
+            },
+            'type': 'a'
         },
-        "data": {
-
+        'links': {
+            'delete_session': {
+                'href': '/calibration/check/session',
+                'meta': {'params': {}}
+            },
+            'jog': {
+                'href': '/calibration/check/session/jog',
+                'meta': {'params': {}}
+            },
+            'pick_up_tip': {
+                'href': '/calibration/check/session/pickUpTip',
+                'meta': {'params': {}}}
         }
     }
 
 
-
-
-
 ########################################
-## Below are ports of the aiohttp tests.
+# Below are ports of the aiohttp tests.
 ########################################
-
-
 
 @pytest.fixture
 def calibration_check_hardware():

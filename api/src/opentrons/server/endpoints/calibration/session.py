@@ -35,9 +35,6 @@ class PipetteStatus:
     model: str
     name: str
     tip_length: float
-    mount_axis: Axis
-    plunger_axis: Axis
-    pipette_uuid: Axis
     has_tip: bool
     tiprack_id: typing.Optional[UUID]
 
@@ -240,9 +237,6 @@ class CalibrationSession:
                 model=pip['model'],
                 name=pip['name'],
                 tip_length=pip['tip_length'],
-                mount_axis=pip['mount_axis'],
-                plunger_axis=pip['plunger_axis'],
-                pipette_uuid=pip['pipette_uuid'],
                 has_tip=pip['has_tip'],
                 tiprack_id=data['tiprack_id'],
             )
