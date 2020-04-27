@@ -20,11 +20,7 @@ router = APIRouter()
 
 def get_current_session(session_type: model.SessionType,
                         api_router: APIRouter) -> CalibrationSession:
-    """
-    A dependency for handlers that require a current session.
-
-    Get the current session or raise a RobotServerError
-    """
+    """Get the current session or raise a RobotServerError"""
     manager = get_calibration_session_manager()
     session = manager.sessions.get(session_type.value)
     if not session:
@@ -45,8 +41,13 @@ def get_current_session(session_type: model.SessionType,
 
 
 def get_check_session() -> CheckCalibrationSession:
-    """Get the current active check calibration session"""
+    """
+    A dependency for handlers that require a current session.
+
+    Get the current active check calibration session
+    """
     from robot_server.service.app import app
+    # Return an upcasted CalibrationSession
     return get_current_session(session_type=model.SessionType.check,
                                api_router=app)
 
@@ -207,21 +208,29 @@ def create_session_response(session: CheckCalibrationSession,
                                    session.get_potential_triggers(),
                                    request.app)
     instruments = {
-        k: model.AttachedPipette(model=v.model,
-                                 name=v.name,
-                                 tip_length=v.tip_length,
-                                 has_tip=v.has_tip,
-                                 tiprack_id=v.tiprack_id)
+        str(k): model.AttachedPipette(model=v.model,
+                                      name=v.name,
+                                      tip_length=v.tip_length,
+                                      has_tip=v.has_tip,
+                                      tiprack_id=v.tiprack_id)
         for k, v in session.pipette_status().items()
     }
+    labware = [
+            model.LabwareStatus(alternatives=data.alternatives,
+                                slot=data.slot,
+                                id=data.id,
+                                forPipettes=data.forPipettes,
+                                loadName=data.loadName,
+                                namespace=data.namespace,
+                                version=data.version) for data in
+            session.labware_status.values()
+        ]
 
     status = model.CalibrationSessionStatus(
         instruments=instruments,
         currentStep=session.current_state_name,
-        labware=[
-            model.LabwareStatus(**data) for data in
-            session.labware_status.values()
-        ])
+        labware=labware
+    )
     return CalibrationSessionStatusResponse(
         data=CalibrationSessionStatusResponseM(
             attributes=status,

@@ -1,6 +1,7 @@
-from typing import Dict, Optional, List, Any, Union
+from typing import Dict, Optional, List, Union
 from enum import Enum
-from pydantic import BaseModel, Field, UUID4
+from uuid import UUID
+from pydantic import BaseModel, Field
 
 from opentrons.hardware_control.types import Axis
 
@@ -13,17 +14,17 @@ class SessionType(str, Enum):
 
 
 class TiprackPosition(BaseModel):
-    locationId: UUID4
+    locationId: UUID
     offset: Point = PointField()
 
 
 class DeckPosition(BaseModel):
-    locationId: UUID4
+    locationId: UUID
     position: Point = PointField()
 
 
 class SpecificPipette(BaseModel):
-    pipetteId: UUID4
+    pipetteId: UUID
 
 
 class MoveLocation(SpecificPipette):
@@ -52,7 +53,7 @@ class AttachedPipette(BaseModel):
         Field(None, description="The axis that moves plunger of this pipette")
     has_tip: Optional[bool] =\
         Field(None, description="Whether a tip is attached.")
-    tiprack_id: Optional[UUID4] =\
+    tiprack_id: Optional[UUID] =\
         Field(None, description="Id of tiprack associated with this pip.")
 
 
@@ -60,11 +61,11 @@ class LabwareStatus(BaseModel):
     """A model describing all tipracks required, based on pipettes attached."""
     alternatives: List[str]
     slot: Optional[str]
-    id: UUID4
-    forPipettes: List[UUID4]
+    id: UUID
+    forPipettes: List[UUID]
     loadName: str
     namespace: str
-    version: int
+    version: str
 
 
 class CalibrationSessionStatus(BaseModel):

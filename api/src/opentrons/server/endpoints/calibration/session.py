@@ -225,7 +225,7 @@ class CalibrationSession:
     def pipettes(self) -> typing.Dict[Mount, Pipette.DictType]:
         return self.hardware.attached_instruments
 
-    def pipette_status(self) -> typing.Dict[str, PipetteStatus]:
+    def pipette_status(self) -> typing.Dict[UUID, PipetteStatus]:
         """
         Public property to help format the current labware status of a given
         session for the client.
@@ -240,27 +240,16 @@ class CalibrationSession:
                 has_tip=pip['has_tip'],
                 tiprack_id=data['tiprack_id'],
             )
-            to_dict[str(inst_id)] = p
+            to_dict[inst_id] = p
         return to_dict
 
     @property
-    def labware_status(self) -> typing.Dict:
+    def labware_status(self) -> typing.Dict[UUID, LabwareInfo]:
         """
         Public property to help format the current labware status of a given
         session for the client.
-
-        Note:
-        Pydantic restricts dictionary keys that can be evaluated. Since
-        the session labware dictionary has a UUID as a key, we must first
-        convert the UUID to a hex string.
         """
-
-        to_dict = {}
-        for name, value in self._labware_info.items():
-            temp_dict = asdict(value)
-            del temp_dict['definition']
-            to_dict[str(name)] = temp_dict
-        return to_dict
+        return self._labware_info
 
 
 # TODO: BC: move the check specific stuff to the check sub dir

@@ -1,11 +1,12 @@
 import pytest
 from unittest.mock import MagicMock
 import asyncio
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from opentrons.hardware_control import HardwareAPILike, ThreadManager, API
 from opentrons.server.endpoints.calibration.session \
-    import CheckCalibrationSession, CalibrationCheckState, CalibrationCheckTrigger
+    import CheckCalibrationSession, CalibrationCheckState, \
+    CalibrationCheckTrigger, PipetteStatus, LabwareInfo
 from starlette.testclient import TestClient
 from opentrons import types
 
@@ -13,6 +14,8 @@ from robot_server.service.app import app
 from robot_server.service.dependencies import get_hardware,\
     get_calibration_session_manager
 from robot_server.service.models.calibration_check import SessionType
+from robot_server.service.models.json_api import ResourceTypes
+from robot_server.service.routers import calibration_check
 
 
 @pytest.fixture
@@ -101,6 +104,86 @@ def test_api_return_session_status(api_client, mock_cal_session, path, method):
                 'href': '/calibration/check/session/pickUpTip',
                 'meta': {'params': {}}}
         }
+    }
+
+
+def test_create_session_response(mock_cal_session):
+    mock_request = MagicMock()
+    mock_request.app = app
+
+    pip1id = uuid4()
+    pip2id = uuid4()
+    pip1st = PipetteStatus(name="pip1", model="model1", tip_length=1.0,
+                           has_tip=False, tiprack_id=uuid4())
+    pip2st = PipetteStatus(name="pip2", model="model2", tip_length=2.0,
+                           has_tip=True, tiprack_id=None)
+
+    pipettes = {
+        pip1id: pip1st,
+        pip2id: pip2st
+    }
+
+    mock_cal_session.format_params.return_value = {}
+
+    mock_cal_session.pipette_status.return_value = pipettes
+
+    labware = {
+        uuid4(): LabwareInfo(alternatives=["a", "b"],
+                             forPipettes=[uuid4()],
+                             loadName="loadname1",
+                             slot="slot1",
+                             namespace="namespace1",
+                             version="version1",
+                             id=uuid4(),
+                             definition={})
+    }
+
+    mock_cal_session.labware_status = labware
+
+    response = calibration_check.create_session_response(mock_cal_session,
+                                                         mock_request)
+    assert response.dict() == {
+        'data': {
+            'id': None,
+            'attributes': {
+                'currentStep': 'preparingPipette',
+                'instruments': {
+                    str(k): {
+                        'name': v.name,
+                        'model': v.model,
+                        'tip_length': v.tip_length,
+                        'tiprack_id': v.tiprack_id,
+                        'has_tip': v.has_tip,
+                        'mount_axis': None,
+                        'plunger_axis': None,
+                    } for k, v in pipettes.items()
+                },
+                'labware': [{
+                    'alternatives': lw.alternatives,
+                    'forPipettes': lw.forPipettes,
+                    'loadName': lw.loadName,
+                    'slot': lw.slot,
+                    'namespace': lw.namespace,
+                    'version': lw.version,
+                    'id': lw.id
+                } for lw in labware.values()]
+            },
+            'type': ResourceTypes.a
+        },
+        'links': {
+            'delete_session': {
+                'href': '/calibration/check/session',
+                'meta': {'params': {}}
+            },
+            'jog': {
+                'href': '/calibration/check/session/jog',
+                'meta': {'params': {}}
+            },
+            'pick_up_tip': {
+                'href': '/calibration/check/session/pickUpTip',
+                'meta': {'params': {}}}
+        },
+        'meta': None
     }
 
 
