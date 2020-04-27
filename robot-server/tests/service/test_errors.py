@@ -1,19 +1,21 @@
 import pytest
 
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 from starlette.exceptions import HTTPException
 
 from robot_server.service import errors
-from tests.service.helpers import ItemRequest
+
+
+class TestModel(BaseModel):
+    a: int
+    b: str
 
 
 def test_transform_validation_error_to_json_api_errors():
     with pytest.raises(ValidationError) as e:
-        ItemRequest(**{
-            'data': {
-                'type': 'invalid'
-            }
+        TestModel(**{
+            'a': 'woof'
         })
     assert errors.transform_validation_error_to_json_api_errors(
         HTTP_422_UNPROCESSABLE_ENTITY,
@@ -22,18 +24,17 @@ def test_transform_validation_error_to_json_api_errors():
         'errors': [
             {
                 'status': str(HTTP_422_UNPROCESSABLE_ENTITY),
-                'detail': "value is not a valid enumeration member; permitted:"
-                          " 'item'",
+                'detail': "value is not a valid integer",
                 'source': {
-                    'pointer': '/data/type'
+                    'pointer': '/a'
                 },
-                'title': 'type_error.enum'
+                'title': 'type_error.integer'
             },
             {
                 'status': str(HTTP_422_UNPROCESSABLE_ENTITY),
                 'detail': 'field required',
                 'source': {
-                    'pointer': '/data/attributes'
+                    'pointer': '/b'
                 },
                 'title': 'value_error.missing'
             },

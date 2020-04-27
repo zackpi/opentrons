@@ -1,7 +1,5 @@
 from starlette.status import HTTP_200_OK, HTTP_422_UNPROCESSABLE_ENTITY
 
-from tests.service.helpers import ItemData
-
 
 def test_get_item(api_client):
     item_id = "1"
@@ -10,7 +8,7 @@ def test_get_item(api_client):
     assert response.json() == {
         "data": {
             "id": item_id,
-            "type": 'item',
+            "type": 'Item',
             "attributes": {
                 "name": "apple",
                 "quantity": 10,
@@ -24,11 +22,18 @@ def test_get_item(api_client):
 
 
 def test_create_item(api_client):
-    data = {"name": "apple", "quantity": 10, "price": 1.20}
-    item = ItemData(**data)
     response = api_client.post(
         "/items",
-        json={"data": {"type": "item", "attributes": vars(item)}}
+        json={
+            "data": {
+                "type": "Item",
+                "attributes": {
+                    "name": "apple",
+                    "quantity": 10,
+                    "price": 1.20
+                }
+            }
+        }
     )
     # NOTE(isk: 3/11/20): We don't have the id until the resource is created
     response_id = response.json().get("data", {}).get('id')
@@ -36,11 +41,11 @@ def test_create_item(api_client):
     assert response.json() == {
         "data": {
             "id": response_id,
-            "type": 'item',
+            "type": 'Item',
             "attributes": {
-                "name": item.name,
-                "quantity": item.quantity,
-                "price": item.price
+                "name": "apple",
+                "quantity": 10,
+                "price": 1.20
             },
         },
         "links": {

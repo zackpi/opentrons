@@ -9,11 +9,10 @@ from robot_server.service.dependencies import get_calibration_session_manager
 from robot_server.service.models import calibration_check as model
 from robot_server.service.errors import RobotServerError, Error
 from robot_server.service.models.json_api.resource_links import ResourceLink
-from robot_server.service.models.json_api.response import ResponseDataModel, ResponseModel
-from robot_server.service.models.json_api import ResourceTypes
+from robot_server.service.models.json_api.response import ResponseModel, \
+    ResponseDataModel
 
-CalibrationSessionStatusResponseM = ResponseDataModel[model.CalibrationSessionStatus]
-CalibrationSessionStatusResponse = ResponseModel[CalibrationSessionStatusResponseM]
+CalibrationSessionStatusResponse = ResponseModel[model.CalibrationSessionStatus]
 
 router = APIRouter()
 
@@ -232,9 +231,9 @@ def create_session_response(session: CheckCalibrationSession,
         labware=labware
     )
     return CalibrationSessionStatusResponse(
-        data=CalibrationSessionStatusResponseM(
+        data=ResponseDataModel[model.CalibrationSessionStatus](
             attributes=status,
-            type=ResourceTypes.a
+            type=model.CalibrationSessionStatus.__name__
         ),
         links=links,
     )
