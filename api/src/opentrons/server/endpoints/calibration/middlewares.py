@@ -2,7 +2,7 @@ import typing
 from aiohttp import web
 from aiohttp.web_urldispatcher import UrlDispatcher
 from .session import CheckCalibrationSession, CalibrationCheckTrigger
-from .models import CalibrationSessionStatus, LabwareStatus
+from .models import CalibrationSessionStatus, LabwareStatus, AttachedPipette
 from .constants import ALLOWED_SESSIONS, LabwareLoaded, TipAttachError
 from .util import StateMachineError
 
@@ -78,11 +78,26 @@ def status_response(
 
     lw_status = session.labware_status.values()
 
+    instruments = {
+        str(k): AttachedPipette(model=v.model,
+                                name=v.name,
+                                tip_length=v.tip_length,
+                                has_tip=v.has_tip,
+                                tiprack_id=v.tiprack_id)
+        for k, v in session.pipette_status().items()
+    }
+
     sess_status = CalibrationSessionStatus(
-        instruments=session.pipette_status,
+        instruments=instruments,
         currentStep=current_state,
         nextSteps=links,
-        labware=[LabwareStatus(**data) for data in lw_status])
+        labware=[LabwareStatus(alternatives=data.alternatives,
+                               slot=data.slot,
+                               id=data.id,
+                               forPipettes=data.forPipettes,
+                               loadName=data.loadName,
+                               namespace=data.namespace,
+                               version=data.version) for data in lw_status])
     return web.json_response(text=sess_status.json(), status=response.status)
 
 

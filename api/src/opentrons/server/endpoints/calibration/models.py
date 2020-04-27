@@ -1,6 +1,7 @@
+from uuid import UUID
 from typing import Dict, Optional, List, Any, Union
 from functools import partial
-from pydantic import BaseModel, Field, UUID4
+from pydantic import BaseModel, Field
 
 from opentrons.hardware_control.types import Axis
 
@@ -14,26 +15,26 @@ PointField = partial(Field, ...,
 
 
 class TiprackPosition(BaseModel):
-    locationId: UUID4
+    locationId: UUID
     offset: Point = PointField()
 
 
 class DeckPosition(BaseModel):
-    locationId: UUID4
+    locationId: UUID
     position: Point = PointField()
 
 
 class SpecificPipette(BaseModel):
-    pipetteId: UUID4
+    pipetteId: UUID
 
 
 class MoveLocation(BaseModel):
-    pipetteId: UUID4
+    pipetteId: UUID
     location: Union[TiprackPosition, DeckPosition]
 
 
 class JogPosition(BaseModel):
-    pipetteId: UUID4
+    pipetteId: UUID
     vector: Point = PointField()
 
 
@@ -55,7 +56,7 @@ class AttachedPipette(BaseModel):
         Field(None, description="The axis that moves plunger of this pipette")
     has_tip: Optional[bool] =\
         Field(None, description="Whether a tip is attached.")
-    tiprack_id: Optional[UUID4] =\
+    tiprack_id: Optional[UUID] =\
         Field(None, description="Id of tiprack associated with this pip.")
 
 
@@ -65,11 +66,11 @@ class LabwareStatus(BaseModel):
     """
     alternatives: List[str]
     slot: Optional[str]
-    id: UUID4
-    forPipettes: List[UUID4]
+    id: UUID
+    forPipettes: List[UUID]
     loadName: str
     namespace: str
-    version: int
+    version: str
 
 
 class CalibrationSessionStatus(BaseModel):
@@ -87,7 +88,7 @@ class CalibrationSessionStatus(BaseModel):
             "examples": [
                 {
                     "instruments": {
-                        "fakeUUID4": {
+                        "fakeUUID": {
                             "model": "p300_single_v1.5",
                             "name": "p300_single",
                             "tip_length": 51.7,
