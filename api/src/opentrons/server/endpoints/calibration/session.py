@@ -8,7 +8,7 @@ from opentrons.types import Mount, Point, Location
 from opentrons.hardware_control.pipette import Pipette
 from opentrons.hardware_control.types import Axis
 
-from .constants import LOOKUP_LABWARE, TipAttachError
+from .constants import LOOKUP_LABWARE
 from .util import StateMachine, WILDCARD
 from opentrons.hardware_control import ThreadManager
 from opentrons.protocol_api import labware, geometry
@@ -18,6 +18,10 @@ A set of endpoints that can be used to create a session for any robot
 calibration tasks such as checking your calibration data, performing mount
 offset or a robot deck transform.
 """
+
+
+class CalibrationException(Exception):
+    pass
 
 
 class SessionManager:
@@ -271,16 +275,16 @@ class CalibrationCheckState(str, Enum):
 
 
 class CalibrationCheckTrigger(str, Enum):
-    load_labware = "load_labware"
-    prepare_pipette = "prepare_pipette"
+    load_labware = "loadLabware"
+    prepare_pipette = "preparePipette"
     jog = "jog"
-    pick_up_tip = "pick_up_tip"
-    confirm_tip_attached = "confirm_tip_attached"
-    invalidate_tip = "invalidate_tip"
-    confirm_step = "confirm_step"
-    exit = "exit"
-    reject_calibration = "reject_calibration"
-    no_pipettes = "no_pipettes"
+    pick_up_tip = "pickUpTip"
+    confirm_tip_attached = "confirmTipAttached"
+    invalidate_tip = "invalidateTip"
+    confirm_step = "confirmStep"
+    exit = "sessionExit"
+    reject_calibration = "rejectCalibration"
+    no_pipettes = "noPipettes"
 
 
 CHECK_TRANSITIONS = [
@@ -429,7 +433,7 @@ class CheckCalibrationSession(CalibrationSession, StateMachine):
         for mount in self._relate_mount.values():
             try:
                 await self._return_tip(mount['mount'])
-            except (TipAttachError, AssertionError):
+            except (CalibrationException, AssertionError):
                 pass
         await self.hardware.home()
         await self.hardware.set_lights(rails=False)
@@ -441,19 +445,22 @@ class CheckCalibrationSession(CalibrationSession, StateMachine):
         original position.
         """
         if self._has_tip(pipette_id):
-            raise TipAttachError()
+            raise CalibrationException(f"Tip is already attached "
+                                       f"to {pipette_id} pipette.")
         tiprack_id = self._relate_mount[pipette_id]['tiprack_id']
         mount = self._get_mount(pipette_id)
         await self._pick_up_tip(mount, tiprack_id)
 
     async def _invalidate_tip(self, pipette_id: UUID, **kwargs):
         if not self._has_tip(pipette_id):
-            raise TipAttachError()
+            raise CalibrationException(f"No tip attached to {pipette_id} "
+                                       f"pipette.")
         await self.hardware.remove_tip(self._get_mount(pipette_id))
 
     async def _return_tip_for_pipette(self, pipette_id: UUID, **kwargs):
         if not self._has_tip(pipette_id):
-            raise TipAttachError()
+            raise CalibrationException(f"No tip attached to {pipette_id} "
+                                       f"pipette.")
         await self._prepare_pipette(pipette_id=pipette_id)
         await self._return_tip(self._get_mount(pipette_id))
 

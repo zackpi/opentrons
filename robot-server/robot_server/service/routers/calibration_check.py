@@ -1,18 +1,26 @@
 import typing
+
+from opentrons.server.endpoints.calibration.util import StateMachine, \
+    StateMachineError
 from starlette import status as http_status_codes
 from fastapi import APIRouter, Depends
-from opentrons.server.endpoints.calibration.session import SessionManager, \
-    CheckCalibrationSession, CalibrationSession, CalibrationCheckTrigger
 from starlette.requests import Request
 
-from robot_server.service.dependencies import get_calibration_session_manager
+from opentrons.server.endpoints.calibration.session import SessionManager, \
+    CheckCalibrationSession, CalibrationSession, CalibrationCheckTrigger
+from opentrons import types
+from robot_server.service.dependencies import get_calibration_session_manager, \
+    get_hardware
 from robot_server.service.models import calibration_check as model
 from robot_server.service.errors import RobotServerError, Error
 from robot_server.service.models.json_api.resource_links import ResourceLink
 from robot_server.service.models.json_api.response import ResponseModel, \
     ResponseDataModel
+from robot_server.service.models.json_api.request import RequestModel
 
 CalibrationSessionStatusResponse = ResponseModel[model.CalibrationSessionStatus]
+PipetteRequest = RequestModel[model.SpecificPipette]
+JogRequest = RequestModel[model.JogPosition]
 
 router = APIRouter()
 
@@ -56,9 +64,14 @@ def get_check_session() -> CheckCalibrationSession:
             response_model_exclude_unset=True,)
 async def get_session(
         request: Request,
-        session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(
-            get_check_session)) -> CalibrationSessionStatusResponse:
+        session_type: model.SessionType) -> CalibrationSessionStatusResponse:
+    """
+    Get the current session
+
+    :param request: Starlette request
+    :param session_type: Session type
+    """
+    session = get_current_session(session_type, request.app)
     return create_session_response(session, request)
 
 
@@ -70,15 +83,51 @@ async def create_session(
         request: Request,
         session_type: model.SessionType,
         session_manager: SessionManager = Depends(
-            get_calibration_session_manager))\
+            get_calibration_session_manager),
+        hardware=Depends(get_hardware))\
         -> CalibrationSessionStatusResponse:
-    pass
+    """
+    Handler that creates a session
 
-# @router.post('/{session_type}/session/move')
-# async def move(session_type: model.SessionType,
-#                session_manager: SessionManager = Depends(
-#                    get_calibration_session_manager)):
-#     pass
+    :param request: The Starlete request object
+    :param session_type: The session type requested
+    :param session_manager: Dependency injected session manager
+    :param hardware: Dependency injected hardware
+    """
+    current_session = session_manager.sessions.get(session_type)
+    if not current_session:
+        new_session = await CheckCalibrationSession.build(hardware)
+        session_manager.sessions[session_type] = new_session
+        return create_session_response(new_session, request)
+    else:
+        raise RobotServerError(
+            status_code=http_status_codes.HTTP_409_CONFLICT,
+            error=Error(
+                title="Conflict",
+                detail=f"A {session_type} session exists. Please delete to"
+                       f" proceed.",
+                links={
+                    "deleteSession": request.app.url_path_for(
+                        delete_session.__name__,
+                        session_type=session_type.value)
+                }
+            )
+        )
+
+
+@router.delete('/{session_type}/session',
+               response_model=CalibrationSessionStatusResponse,
+               response_model_exclude_unset=True)
+async def delete_session(
+        request: Request,
+        session_type: model.SessionType,
+        session_manager: SessionManager = Depends(get_calibration_session_manager)) \
+        -> CalibrationSessionStatusResponse:
+    """Delete session handler"""
+    session = get_current_session(session_type, request.app)
+    await session.delete_session()
+    del session_manager.sessions[session_type]
+    return create_session_response(session, request)
 
 
 @router.post('/{session_type}/session/loadLabware',
@@ -87,7 +136,10 @@ async def create_session(
 async def load_labware(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Load labware handler"""
+    await trigger_state(request, session, CalibrationCheckTrigger.load_labware)
     return create_session_response(session, request)
 
 
@@ -97,7 +149,13 @@ async def load_labware(
 async def prepare_pipette(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
+        pipette: PipetteRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Prepare pipette handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.prepare_pipette,
+                        pipette_id=pipette.data.attributes.pipetteId)
     return create_session_response(session, request)
 
 
@@ -107,7 +165,13 @@ async def prepare_pipette(
 async def pick_up_tip(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
+        pipette: PipetteRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Pick up tip handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.pick_up_tip,
+                        pipette_id=pipette.data.attributes.pipetteId)
     return create_session_response(session, request)
 
 
@@ -117,7 +181,13 @@ async def pick_up_tip(
 async def invalidate_tip(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
+        pipette: PipetteRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Invalidate tip handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.invalidate_tip,
+                        pipette_id=pipette.data.attributes.pipetteId)
     return create_session_response(session, request)
 
 
@@ -127,7 +197,13 @@ async def invalidate_tip(
 async def confirm_tip(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
+        pipette: PipetteRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Confirm tip handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.confirm_tip_attached,
+                        pipette_id=pipette.data.attributes.pipetteId)
     return create_session_response(session, request)
 
 
@@ -137,7 +213,16 @@ async def confirm_tip(
 async def jog(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
+        jog: JogRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Jog handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.jog,
+                        pipette_id=jog.data.attributes.pipetteId,
+                        vector=types.Point(x=jog.data.attributes.vector[0],
+                                           y=jog.data.attributes.vector[1],
+                                           z=jog.data.attributes.vector[2]))
     return create_session_response(session, request)
 
 
@@ -147,21 +232,35 @@ async def jog(
 async def confirm_step(
         request: Request,
         session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session))-> CalibrationSessionStatusResponse:
+        pipette: PipetteRequest,
+        session: CheckCalibrationSession = Depends(get_check_session)) \
+        -> CalibrationSessionStatusResponse:
+    """Confirm step handler"""
+    await trigger_state(request, session,
+                        CalibrationCheckTrigger.confirm_step,
+                        pipette_id=pipette.data.attributes.pipetteId)
     return create_session_response(session, request)
 
 
-@router.delete('/{session_type}/session',
-               response_model=CalibrationSessionStatusResponse,
-               response_model_exclude_unset=True)
-async def delete_session(
-        request: Request,
-        session_type: model.SessionType,
-        session: CheckCalibrationSession = Depends(get_check_session)) -> CalibrationSessionStatusResponse:
-    return create_session_response(session, request)
+async def trigger_state(request: Request,
+                        state_machine: StateMachine,
+                        trigger: str,
+                        *args, **kwargs):
+    """Trigger a state transition"""
+    try:
+        await state_machine.trigger_transition(trigger, *args, **kwargs)
+    except StateMachineError as e:
+        raise RobotServerError(
+            status_code=http_status_codes.HTTP_409_CONFLICT,
+            error=Error(
+                title="Exception",
+                detail=str(e),
+                links=create_next_step_links(state_machine, request.app)
+            )
+        )
 
 
-TRIGGER_TO_NAME = {
+TRIGGER_TO_NAME: typing.Dict[str, str] = {
     CalibrationCheckTrigger.load_labware: load_labware.__name__,
     CalibrationCheckTrigger.prepare_pipette: prepare_pipette.__name__,
     CalibrationCheckTrigger.jog: jog.__name__,
@@ -175,13 +274,12 @@ TRIGGER_TO_NAME = {
 }
 
 
-def create_next_step_links(session: 'CheckCalibrationSession',
-                           potential_triggers: typing.Set[str],
+def create_next_step_links(session: CheckCalibrationSession,
                            api_router: APIRouter) \
         -> typing.Dict[str, ResourceLink]:
     """Create the links for next steps in the process"""
     links = {}
-    for trigger in potential_triggers:
+    for trigger in session.get_potential_triggers():
         route_name = TRIGGER_TO_NAME.get(trigger)
         if route_name:
             url = api_router.url_path_for(
@@ -190,7 +288,7 @@ def create_next_step_links(session: 'CheckCalibrationSession',
 
             params = session.format_params(trigger)
             if url:
-                links[route_name] = ResourceLink(
+                links[trigger] = ResourceLink(
                     href=url,
                     meta={
                         'params': params
@@ -204,7 +302,6 @@ def create_session_response(session: CheckCalibrationSession,
         -> CalibrationSessionStatusResponse:
     """Create session response"""
     links = create_next_step_links(session,
-                                   session.get_potential_triggers(),
                                    request.app)
     instruments = {
         str(k): model.AttachedPipette(model=v.model,

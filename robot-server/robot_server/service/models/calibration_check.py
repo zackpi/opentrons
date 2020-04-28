@@ -13,22 +13,8 @@ class SessionType(str, Enum):
     check = 'check'
 
 
-class TiprackPosition(BaseModel):
-    locationId: UUID
-    offset: Point = PointField()
-
-
-class DeckPosition(BaseModel):
-    locationId: UUID
-    position: Point = PointField()
-
-
 class SpecificPipette(BaseModel):
     pipetteId: UUID
-
-
-class MoveLocation(SpecificPipette):
-    location: Union[TiprackPosition, DeckPosition]
 
 
 class JogPosition(SpecificPipette):
@@ -54,7 +40,7 @@ class AttachedPipette(BaseModel):
     has_tip: Optional[bool] =\
         Field(None, description="Whether a tip is attached.")
     tiprack_id: Optional[UUID] =\
-        Field(None, description="Id of tiprack associated with this pip.")
+        Field(None, description="Id of tiprack associated with this pipette.")
 
 
 class LabwareStatus(BaseModel):
@@ -69,9 +55,7 @@ class LabwareStatus(BaseModel):
 
 
 class CalibrationSessionStatus(BaseModel):
-    """
-    The current status of a given session.
-    """
+    """The current status of a given session."""
     instruments: Dict[str, AttachedPipette]
     currentStep: str = Field(..., description="Current step of session")
     labware: List[LabwareStatus]

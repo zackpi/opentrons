@@ -27,7 +27,8 @@ async def get_item(item_id: str) -> ItemResponse:
     try:
         # NOTE(isk: 3/10/20): mock DB / robot response
         item = Item(name="apple", quantity=10, price=1.20)
-        data = RequestDataModel(id=item_id, attributes=item, type=Item.__name__)
+        data = RequestDataModel[Item](id=item_id,
+                                      attributes=item, type=Item.__name__)
         return ItemResponse(data=data, links={"self": f'/items/{item_id}'})
     except ValidationError as e:
         raise HTTPException(
@@ -50,5 +51,7 @@ async def create_item(
 ) -> ItemResponse:
     item = item_request.data.attributes
     # NOTE(isk: 3/10/20): mock DB / robot response
-    data = ResponseDataModel(id="33", attributes=item, type=Item.__name__)
+    data = ResponseDataModel[Item](id="33",
+                                   attributes=item,
+                                   type=Item.__name__)
     return ItemResponse(data=data, links={"self": f'/items/{data.id}'})
