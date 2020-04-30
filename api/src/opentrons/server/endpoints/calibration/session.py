@@ -1,12 +1,11 @@
 import typing
 from uuid import uuid4, UUID
 from enum import Enum
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, field
 
 from opentrons.protocol_api.labware import Well
 from opentrons.types import Mount, Point, Location
 from opentrons.hardware_control.pipette import Pipette
-from opentrons.hardware_control.types import Axis
 
 from .constants import LOOKUP_LABWARE
 from .util import StateMachine, WILDCARD
@@ -238,10 +237,10 @@ class CalibrationSession:
         for inst_id, data in self._relate_mount.items():
             pip = self.get_pipette(data['mount'])
             p = PipetteStatus(
-                model=pip['model'],
-                name=pip['name'],
-                tip_length=pip['tip_length'],
-                has_tip=pip['has_tip'],
+                model=str(pip['model']),
+                name=str(pip['name']),
+                tip_length=float(pip['tip_length']),
+                has_tip=bool(pip['has_tip']),
                 tiprack_id=data['tiprack_id'],
             )
             to_dict[inst_id] = p

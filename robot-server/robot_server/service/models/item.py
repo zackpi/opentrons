@@ -5,4 +5,3 @@ class Item(BaseModel):
     name: str
     quantity: int
     price: float
-

@@ -1,5 +1,3 @@
-from typing import List
-
 from pytest import raises
 from pydantic import BaseModel, ValidationError
 
@@ -248,7 +246,7 @@ def test_resource_object_constructor_with_list_response():
     ]).dict()
 
     assert document == {
-        'data':[{
+        'data': [{
             'id': 'abc123',
             'type': 'item',
             'attributes': {
@@ -295,7 +293,9 @@ def test_response_constructed_with_resource_object_list():
     )
     response = ItemResponse(
         data=[
-            ResponseDataModel[Item](id=item[0], attributes=item[1], type='item')
+            ResponseDataModel[Item](id=item[0],
+                                    attributes=item[1],
+                                    type='item')
             for item in items
         ]
     )
