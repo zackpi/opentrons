@@ -279,7 +279,7 @@ class CalibrationCheckTrigger(str, Enum):
     prepare_pipette = "preparePipette"
     jog = "jog"
     pick_up_tip = "pickUpTip"
-    confirm_tip_attached = "confirmTipAttached"
+    confirm_tip_attached = "confirmTip"
     invalidate_tip = "invalidateTip"
     confirm_step = "confirmStep"
     exit = "sessionExit"
