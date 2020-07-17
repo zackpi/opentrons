@@ -53,6 +53,7 @@ class SessionType(str, Enum):
         'tipLengthCalibration',
         tip_length_calibration_models.SessionCreateParams
     )
+    protocol = 'protocol'
 
     @property
     def model(self):
