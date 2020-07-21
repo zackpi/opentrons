@@ -33,6 +33,10 @@ class JogPosition(BaseModel):
     vector: OffsetVector
 
 
+class ProtocolCreateParams(BaseModel):
+    name: str
+
+
 class SessionType(str, Enum):
     """The available session types"""
     def __new__(cls, value, create_param_model=type(None)):
@@ -53,7 +57,7 @@ class SessionType(str, Enum):
         'tipLengthCalibration',
         tip_length_calibration_models.SessionCreateParams
     )
-    protocol = 'protocol'
+    protocol = ('protocol', ProtocolCreateParams)
 
     @property
     def model(self):
@@ -73,7 +77,9 @@ https://pydantic-docs.helpmanual.io/usage/types/#literal-type
 """
 SessionCreateParamType = typing.Union[
     tip_length_calibration_models.SessionCreateParams,
-    None, EmptyModel
+    None,
+    ProtocolCreateParams,
+    EmptyModel
 ]
 
 """
@@ -131,7 +137,7 @@ class CommandDefinition(str, Enum):
 
 
 class RobotCommand(CommandDefinition):
-    """Generic commands"""
+    """Robot commands"""
     home_all_motors = "homeAllMotors"
     home_pipette = "homePipette"
     toggle_lights = "toggleLights"
@@ -139,6 +145,19 @@ class RobotCommand(CommandDefinition):
     @staticmethod
     def namespace():
         return "robot"
+
+
+class ProtocolCommand(CommandDefinition):
+    """Protocol commands"""
+    run = "run"
+    simulate = "simulate"
+    cancel = "cancel"
+    pause = "pause"
+    resume = "resume"
+
+    @staticmethod
+    def namespace():
+        return "protocol"
 
 
 class CalibrationCommand(CommandDefinition):
@@ -195,7 +214,8 @@ CommandDefinitionType = typing.Union[
     RobotCommand,
     CalibrationCommand,
     CalibrationCheckCommand,
-    TipLengthCalibrationCommand
+    TipLengthCalibrationCommand,
+    ProtocolCommand
 ]
 
 

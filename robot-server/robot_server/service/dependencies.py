@@ -46,16 +46,22 @@ async def get_rpc_server() -> RPCServer:
     return _rpc_server_instance
 
 
-def get_session_manager(hardware: ThreadManager = Depends(get_hardware)) \
-        -> SessionManager:
-    """The single session manager instance"""
-    global _session_manager_inst
-    if not _session_manager_inst:
-        _session_manager_inst = SessionManager(hardware=hardware)
-    return _session_manager_inst
-
-
 @lru_cache(maxsize=1)
 def get_protocol_manager() -> ProtocolManager:
     """The single protocol manager instance"""
     return ProtocolManager()
+
+
+def get_session_manager(
+        hardware: ThreadManager = Depends(get_hardware),
+        motion_lock: ThreadedAsyncLock = Depends(get_motion_lock),
+        protocol_manager: ProtocolManager = Depends(get_protocol_manager)) \
+        -> SessionManager:
+    """The single session manager instance"""
+    global _session_manager_inst
+    if not _session_manager_inst:
+        _session_manager_inst = SessionManager(
+            hardware=hardware,
+            motion_lock=motion_lock,
+            protocol_manager=protocol_manager)
+    return _session_manager_inst

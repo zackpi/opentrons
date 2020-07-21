@@ -74,3 +74,8 @@ class UploadedProtocol:
     @property
     def meta(self) -> UploadedProtocolMeta:
         return self._meta
+
+    def get_contents(self) -> str:
+        with open(Path(self.meta.directory.name) / self.meta.protocol_file_name, "r") as f:
+            return f.read()
+

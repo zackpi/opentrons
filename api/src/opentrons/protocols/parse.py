@@ -236,7 +236,7 @@ def infer_version_from_imports(parsed: ast.Module) -> Optional[APIVersion]:
 
     # If any of these are populated, filter for entries with v1-specific terms
     opentrons_imports = set(ot_imports + ot_from_imports)
-    v1_markers = set(('robot', 'instruments', 'modules', 'containers'))
+    v1_markers = {'robot', 'instruments', 'modules', 'containers'}
     v1evidence = v1_markers.intersection(opentrons_imports)
     if v1evidence:
         return APIVersion(1, 0)
