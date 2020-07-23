@@ -7,7 +7,7 @@ import sys
 
 from opentrons import ThreadManager
 from opentrons.api import Session
-from opentrons.broker import Broker, Notifications
+from opentrons.broker import Broker
 from opentrons.hardware_control import ThreadedAsyncLock
 
 from robot_server.util import duration
@@ -122,20 +122,16 @@ class ProtocolSession(BaseSession, CommandExecutor):
 def runner(protocol: UploadedProtocol,
            hardware: ThreadManager,
            motion_lock: ThreadedAsyncLock,
-           queue: Queue):
+           in_queue: Queue,
+           out_queue: Queue):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    def _m(message):
+        out_queue.put(message)
+
     broker = Broker()
-    notifications = Notifications(Session.TOPIC,
-                                  broker,
-                                  loop)
-
-    async def _m():
-        async for event in notifications:
-            log.info(event)
-            queue.put(event)
-
-    task = loop.create_task(_m())
+    broker.subscribe(Session.TOPIC, _m)
 
     c = os.getcwd()
     # Change working directory to temp dir
@@ -156,7 +152,6 @@ def runner(protocol: UploadedProtocol,
     except Exception:
         pass
     finally:
-        task.cancel()
         loop.stop()
         # Undo working directory and path modifications
         os.chdir(c)
