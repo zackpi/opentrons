@@ -65,10 +65,10 @@ MODELS = {
 
 
 def write_identifiers(mount, new_id, new_model, driver):
-    '''
+    """
     Send a bytearray to the specified mount, so that Smoothieware can
     save the bytes to the pipette's memory
-    '''
+    """
     driver.write_pipette_id(mount, new_id)
     read_id = driver.read_pipette_id(mount)
     _assert_the_same(new_id, read_id)
@@ -94,10 +94,10 @@ def _assert_the_same(a, b):
 
 
 def _user_submitted_barcode(max_length):
-    '''
+    """
     User can enter a serial number as a string of HEX values
     Length of byte array must equal `num`
-    '''
+    """
     barcode = input('BUTTON + SCAN: ').strip()
     if len(barcode) > max_length:
         raise Exception(BAD_BARCODE_MESSAGE.format(barcode))

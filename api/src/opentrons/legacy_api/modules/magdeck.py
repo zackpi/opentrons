@@ -15,9 +15,9 @@ class MissingDevicePortError(Exception):
 # there should be an upstream ABC in the future to contain shared logic
 # between modules
 class MagDeck(commands.CommandPublisher):
-    '''
+    """
     Under development. API subject to change
-    '''
+    """
     def __init__(self, lw=None, port=None, broker=None):
         super().__init__(broker)
         self.labware = lw
@@ -28,16 +28,16 @@ class MagDeck(commands.CommandPublisher):
 
     @commands.publish.both(command=commands.magdeck_calibrate)
     def calibrate(self):
-        '''
+        """
         Calibration involves probing for top plate to get the plate height
-        '''
+        """
         if self._driver and self._driver.is_connected():
             self._driver.probe_plate()
             # return if successful or not?
 
     @commands.publish.both(command=commands.magdeck_engage)
     def engage(self, **kwargs):
-        '''
+        """
         Move the magnet to either:
             the default height for the labware loaded on magdeck
             [engage()]
@@ -45,7 +45,7 @@ class MagDeck(commands.CommandPublisher):
             [engage(offset=2)]
         or  a 'height' value specified as mm from magdeck home position
             [engage(height=20)]
-        '''
+        """
         if 'height' in kwargs:
             height = kwargs.get('height')
         else:
@@ -71,9 +71,9 @@ class MagDeck(commands.CommandPublisher):
 
     @commands.publish.both(command=commands.magdeck_disengage)
     def disengage(self):
-        '''
+        """
         Home the magnet
-        '''
+        """
         if self._driver and self._driver.is_connected():
             self._driver.home()
         self._height_shadow = 0

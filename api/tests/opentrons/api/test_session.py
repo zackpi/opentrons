@@ -58,10 +58,10 @@ async def test_async_notifications(main_router):
 
 @pytest.mark.parametrize(
     'proto_with_error', [
-        '''
+        """
 metadata={"apiLevel": "2.0"}
 blah
-def run(ctx): pass''',
+def run(ctx): pass""",
         'metadata={"apiLevel": "1.0"}; blah',
     ])
 def test_load_protocol_with_error(session_manager, hardware,
@@ -304,7 +304,7 @@ def run(ctx):
 @pytest.mark.api2_only
 async def test_session_extra_labware(main_router, get_labware_fixture,
                                      virtual_smoothie_env):
-    proto = '''
+    proto = """
 metadata = {"apiLevel": "2.0"}
 
 def run(ctx):
@@ -314,7 +314,7 @@ def run(ctx):
                                 tip_racks=[tiprack])
     instr.pick_up_tip()
     instr.aspirate(300, tr["A1"])
-'''
+"""
     extra_labware = [
         get_labware_fixture('fixture_12_trough')
     ]
@@ -354,7 +354,7 @@ async def test_session_unused_hardware(main_router,
                                        get_json_protocol_fixture):
     # both python v2 and json should have their instruments and modules appear
     # in the session properties even if they are not used
-    proto = '''
+    proto = """
 metadata = {"apiLevel": "2.0"}
 def run(ctx):
     rack1 = ctx.load_labware('opentrons_96_tiprack_300ul', '1')
@@ -369,7 +369,7 @@ def run(ctx):
     left.aspirate(50, plate['A1'])
     left.dispense(50, plate['A2'])
     left.drop_tip()
-    '''
+    """
     session = main_router.session_manager.create('dummy-pipette',
                                                  proto)
     assert 'p300_single_v1' in [pip.name for pip in session.instruments]
@@ -379,7 +379,7 @@ def run(ctx):
     assert 'temperatureModuleV1' in [mod.model for mod in session.modules]
     assert 'tempdeck' in [mod.name for mod in session.modules]
 
-    v1proto = '''
+    v1proto = """
 from opentrons import instruments, modules, labware
 
 racks = [labware.load('opentrons_96_tiprack_300ul', slot)
@@ -395,7 +395,7 @@ left.pick_up_tip()
 left.aspirate(plate.wells(0))
 left.dispense(plate.wells(1))
 left.drop_tip()
-'''
+"""
 
     # json protocols don't support modules so we only have to check pipettes
     jsonp = get_json_protocol_fixture('3', 'unusedPipette', decode=False)
@@ -438,12 +438,12 @@ async def test_session_run_concurrently(
     a pause is started twice.
     """
     # Create a protocol that does nothing but pause.
-    proto = '''
+    proto = """
 metadata = {"apiLevel": "2.0"}
 
 def run(ctx):
     ctx.pause()
-'''
+"""
     session = main_router.session_manager.create_with_extra_labware(
         name='<blank>',
         contents=proto,

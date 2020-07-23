@@ -9,14 +9,14 @@ from serial.serialutil import SerialException  # type: ignore
 from opentrons.drivers import serial_communication, utils
 from opentrons.drivers.serial_communication import SerialNoResponse
 
-'''
+"""
 - Driver is responsible for providing an interface for the temp-deck
 - Driver is the only system component that knows about the temp-deck's GCODES
   or how the temp-deck communications
 
 - Driver is NOT responsible interpreting the temperatures or states in any way
   or knowing anything about what the device is being used for
-'''
+"""
 
 log = logging.getLogger(__name__)
 
@@ -250,7 +250,7 @@ class TempDeck:
         return self._get_status()
 
     def get_device_info(self) -> Mapping[str, str]:
-        '''
+        """
         Queries Temp-Deck for its build version, model, and serial number
 
         returns: dict
@@ -265,7 +265,7 @@ class TempDeck:
 
         Example input from Temp-Deck's serial response:
             "serial:aa11bb22 model:aa11bb22 version:aa11bb22"
-        '''
+        """
         return self._get_info(DEFAULT_COMMAND_RETRIES)
 
     def pause(self):
@@ -300,10 +300,10 @@ class TempDeck:
             raise SerialException(error_msg)
 
     def _wait_for_ack(self):
-        '''
+        """
         This methods writes a sequence of newline characters, which will
         guarantee temp-deck responds with 'ok\r\nok\r\n' within 1 seconds
-        '''
+        """
         self._send_command('\r\n', timeout=DEFAULT_TEMP_DECK_TIMEOUT)
 
     # Potential place for command optimization (buffering, flushing, etc)

@@ -1,4 +1,4 @@
-'''
+"""
 Runs the XYZA axes for 24-hours, and every 10 cycles will test to see if
 any of the axes have skipped by >0.5 mm
 
@@ -9,7 +9,7 @@ Example of calling this script:
 
     nohup python -m opentrons.tools.overnight_test &
 
-'''
+"""
 
 import time
 import logging

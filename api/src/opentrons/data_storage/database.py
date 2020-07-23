@@ -190,7 +190,7 @@ def load_module(module_name: str) -> Container:
 
 
 def get_version():
-    '''Get the Opentrons-defined database version'''
+    """Get the Opentrons-defined database version"""
     db_conn = sqlite3.connect(str(CONFIG['labware_database_file']))
     return _get_db_version(db_conn)
 

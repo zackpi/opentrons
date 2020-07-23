@@ -291,24 +291,24 @@ def test_extra_contents(
 
 # noqa(E122)
 @pytest.mark.parametrize('bad_protocol', [
-    '''
+    """
 from opentrons import robot
 metadata={"apiLevel": "2.0"}
 def run(ctx): pass
-''',
-    '''
+""",
+    """
 metadata = {"apiLevel": "2.0"}
 
 print('hi')
-''',
-    '''
+""",
+    """
 metadata = {"apiLevel": "2.0"}
 def run(ctx):
   pass
 
 def run(blahblah):
   pass
-'''
+"""
 ])
 def test_bad_structure(bad_protocol):
     with pytest.raises(MalformedProtocolError):
