@@ -9,7 +9,7 @@ from opentrons.protocol_api.instrument_context import AdvancedLiquidHandling
 from opentrons.protocol_api.labware import Labware, Well
 from opentrons.protocols.advanced_control.transfers import TransferOptions
 from opentrons.protocols.api_support.util import FlowRates, PlungerSpeeds, \
-    Clearances, HardwareManager
+    Clearances, HardwareManager, clamp_value, build_edges
 from opentrons.protocols.implementation.interfaces.instrument_context import \
     AbstractInstrumentContextImpl
 from opentrons.protocols.implementation.interfaces.protocol_context import \
@@ -63,6 +63,7 @@ class InstrumentContextImplementation(AbstractInstrumentContextImpl,
         self.requested_as = requested_as
         self._flow_rates.set_defaults(self._api_version)
         self._location_cache = location_cache
+        self._trash: typing.Optional[Labware] = None
 
     def get_hardware(self) -> HardwareManager:
         return self._hw_manager
@@ -91,36 +92,67 @@ class InstrumentContextImplementation(AbstractInstrumentContextImpl,
                  volume: float,
                  location: types.Location,
                  rate: float = 1.0) -> None:
-        pass
+        c_vol = self.get_pipette()['available_volume'] if not volume else volume
+
+        cmds.do_publish(self.broker, cmds.aspirate, self.aspirate,
+                        'before', None, None, self, c_vol, location, rate)
+        self._hw_manager.hardware.aspirate(self._mount, volume, rate)
+        cmds.do_publish(self.broker, cmds.aspirate, self.aspirate,
+                        'after', self, None, self, c_vol, location, rate)
 
     def dispense(self,
                  volume: float,
                  location: types.Location,
                  rate: float = 1.0) -> None:
-        pass
+        c_vol = self.get_pipette()['current_volume'] if not volume else volume
+
+        cmds.do_publish(self.broker, cmds.dispense, self.dispense,
+                        'before', None, None, self, c_vol, location, rate)
+        self._hw_manager.hardware.dispense(self._mount, volume, rate)
+        cmds.do_publish(self.broker, cmds.dispense, self.dispense,
+                        'after', self, None, self, c_vol, location, rate)
 
     def mix(self,
             volume: float,
             location: types.Location,
             repetitions: int = 1,
             rate: float = 1.0) -> None:
-        pass
+        c_vol = self.get_pipette()['available_volume'] if not volume else volume
 
-    def blow_out(self,
-                 location: types.Location) -> None:
-        pass
+        cmds.do_publish(self.broker, cmds.mix, self.mix,
+                        'before', None, None,
+                        self, repetitions, c_vol, location)
+        self.aspirate(volume, location, rate)
+        while repetitions - 1 > 0:
+            self.dispense(volume, rate=rate, location=location)
+            self.aspirate(volume, rate=rate, location=location)
+            repetitions -= 1
+        self.dispense(volume, rate=rate, location=location)
+        cmds.do_publish(self.broker, cmds.mix, self.mix,
+                        'after', None, None,
+                        self, repetitions, c_vol, location)
+
+    def blow_out(self) -> None:
+        self._hw_manager.hardware.blow_out(self._mount)
 
     def touch_tip(self,
                   location: Well,
                   radius: float = 1.0,
                   v_offset: float = -1.0,
                   speed: float = 60.0) -> None:
-        pass
+        edges = build_edges(
+            location, v_offset, self._api_version,
+            self._mount, self._ctx.get_deck(), radius)
+        for edge in edges:
+            self._hw_manager.hardware.move_to(self._mount, edge, speed)
 
     def air_gap(self,
+                location: types.Location,
                 volume: float,
                 height: float) -> None:
-        pass
+        target = location.labware.top(height)
+        self.move_to(target)
+        self.aspirate(volume, location=location)
 
     def return_tip(self,
                    home_after: bool = True) -> None:
@@ -138,10 +170,17 @@ class InstrumentContextImplementation(AbstractInstrumentContextImpl,
         pass
 
     def home(self) -> None:
-        pass
+        def home_dummy(mount): pass
+
+        cmds.do_publish(self.broker, cmds.home, home_dummy,
+                        'before', None, None, self._mount.name.lower())
+        self._hw_manager.hardware.home_z(self._mount)
+        self._hw_manager.hardware.home_plunger(self._mount)
+        cmds.do_publish(self.broker, cmds.home, home_dummy,
+                        'after', self, None, self._mount.name.lower())
 
     def home_plunger(self) -> None:
-        pass
+        self._hw_manager.hardware.home_plunger(self._mount)
 
     def transfer(self,
                  volume: typing.Union[float, typing.Sequence[float]],
@@ -152,7 +191,7 @@ class InstrumentContextImplementation(AbstractInstrumentContextImpl,
         pass
 
     def delay(self) -> None:
-        pass
+        self._ctx.delay()
 
     def move_to(self,
                 location: types.Location,
@@ -162,49 +201,55 @@ class InstrumentContextImplementation(AbstractInstrumentContextImpl,
         pass
 
     def get_mount_name(self) -> str:
-        pass
+        return self._mount.name.lower()
 
     def get_speed(self) -> PlungerSpeeds:
-        pass
+        return self._speeds
 
     def get_flow_rate(self) -> FlowRates:
-        pass
+        return self._flow_rates
 
     def get_type(self) -> str:
-        pass
+        model = self.get_name()
+        if 'single' in model:
+            return 'single'
+        elif 'multi' in model:
+            return 'multi'
+        else:
+            raise RuntimeError("Bad pipette name: {}".format(model))
 
     def get_tip_racks(self) -> typing.List[Labware]:
-        pass
+        return self._tip_racks
 
     def set_tip_racks(self, racks: typing.List[Labware]):
-        pass
+        self._tip_racks = racks
 
-    def get_trash_container(self) -> Labware:
-        pass
+    def get_trash_container(self) -> typing.Optional[Labware]:
+        return self._trash
 
     def set_trash_container(self, trash: Labware):
-        pass
+        self._trash = trash
 
     def get_name(self) -> str:
-        pass
+        return self.get_pipette()['name']
 
     def get_model(self) -> str:
-        pass
+        return self.get_pipette()['model']
 
     def get_min_volume(self) -> float:
-        pass
+        return self.get_pipette()['min_volume']
 
     def get_max_volume(self) -> float:
-        pass
+        return self.get_pipette()['max_volume']
 
     def get_current_volume(self) -> float:
-        pass
-
-    def get_available_volume(self) -> float:
         return self.get_pipette()['current_volume']
 
+    def get_available_volume(self) -> float:
+        return self.get_pipette()['available_volume']
+
     def get_current_location(self) -> typing.Optional[types.Location]:
-        pass
+        return self._location_cache.location
 
     def get_pipette(self) -> typing.Dict[str, typing.Any]:
         pipette = self._hw_manager.hardware.attached_instruments[self._mount]

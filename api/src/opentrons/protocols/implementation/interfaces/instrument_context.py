@@ -62,7 +62,7 @@ class AbstractInstrumentContextImpl(ApiVersioned):
         ...
 
     @abstractmethod
-    def blow_out(self, location: types.Location) -> None:
+    def blow_out(self) -> None:
         ...
 
     @abstractmethod
@@ -75,6 +75,7 @@ class AbstractInstrumentContextImpl(ApiVersioned):
 
     @abstractmethod
     def air_gap(self,
+                location: types.Location,
                 volume: float,
                 height: float) -> None:
         ...
@@ -150,7 +151,7 @@ class AbstractInstrumentContextImpl(ApiVersioned):
         ...
 
     @abstractmethod
-    def get_trash_container(self) -> Labware:
+    def get_trash_container(self) -> typing.Optional[Labware]:
         ...
 
     @abstractmethod
