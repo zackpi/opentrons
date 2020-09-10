@@ -10,15 +10,20 @@ from opentrons.protocols.implementation.interfaces.versioned import \
 from opentrons.protocol_api.instrument_context import AdvancedLiquidHandling
 from opentrons.protocol_api.labware import Labware, Well
 from opentrons.protocols.api_support.util import (
-    FlowRates, PlungerSpeeds, Clearances)
+    FlowRates, PlungerSpeeds, Clearances, HardwareManager)
 
 
 class AbstractInstrumentContextImpl(ApiVersioned):
 
     @abstractmethod
+    def get_hardware(self) -> HardwareManager:
+        ...
+
+    @abstractmethod
     def get_starting_tip(self) -> typing.Optional[Well]:
         ...
 
+    @abstractmethod
     def set_starting_tip(self, location: typing.Optional[Well]):
         ...
 
@@ -70,7 +75,6 @@ class AbstractInstrumentContextImpl(ApiVersioned):
 
     @abstractmethod
     def air_gap(self,
-                location: types.Location,
                 volume: float,
                 height: float) -> None:
         ...
@@ -183,7 +187,7 @@ class AbstractInstrumentContextImpl(ApiVersioned):
         ...
 
     @abstractmethod
-    def get_pipettes(self) -> typing.Dict[str, typing.Any]:
+    def get_pipette(self) -> typing.Dict[str, typing.Any]:
         ...
 
     @abstractmethod
