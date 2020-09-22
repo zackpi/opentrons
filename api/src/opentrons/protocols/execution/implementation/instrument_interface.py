@@ -9,7 +9,7 @@ from opentrons.protocol_api.labware import Well
 from opentrons.protocols.advanced_control.transfers import TransferOptions
 
 
-class PipetteInterface(ABC):
+class InstrumentInterface(ABC):
 
     @abstractmethod
     def aspirate(self,
