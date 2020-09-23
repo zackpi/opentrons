@@ -14,7 +14,7 @@ class FlowInterface(ABC):
 
     @abstractmethod
     def delay(self,
-              seconds=0,
+              seconds: int,
               msg: str = None) -> None:
         ...
 
