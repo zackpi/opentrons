@@ -3,13 +3,13 @@ from typing import Dict, Optional
 
 from opentrons import types, API
 from opentrons.protocol_api.labware import Labware
-from opentrons.protocols.execution.implementation.instrument_interface import \
+from opentrons.protocols.implementations.interfaces import \
     InstrumentInterface
-from opentrons.protocols.execution.implementation.magnetic_interface import \
+from opentrons.protocols.implementations.interfaces import \
     MagneticInterface
-from opentrons.protocols.execution.implementation.temperature_interface \
+from opentrons.protocols.implementations.interfaces \
     import TemperatureInterface
-from opentrons.protocols.execution.implementation.thermocycler_interface \
+from opentrons.protocols.implementations.interfaces \
     import ThermocyclerInterface
 from opentrons.protocols.types import APIVersion
 from opentrons.types import Location
