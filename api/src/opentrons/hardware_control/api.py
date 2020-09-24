@@ -1601,18 +1601,26 @@ class API(HardwareAPILike):
         speed = min(instr[0].config.drop_tip_speed for instr in instruments)
 
         async def _drop_tip():
+            mod_log.info(f"******* =======> Setting plunger current for {mount}: {plunger_currents}")
             self._backend.set_active_current(plunger_currents)
+            mod_log.info(f"****** ========> Moving {mount} plunger to bottom: {bottom}")
             await self._move_plunger(mount, bottom)
+            mod_log.info(f"******* =======> Setting drop tip current for {mount}: {drop_tip_currents}")
             self._backend.set_active_current(drop_tip_currents)
+            mod_log.info(f"****** ========> Moving {mount} plunger to drop tip: {droptip}, speed: {speed}")
             await self._move_plunger(
                 mount, droptip, speed=speed)
             if home_after:
+                mod_log.info(f"******* ====> homing after")
                 safety_margin = abs(max(bottom)-max(droptip))
+                mod_log.info(f"******* ====> fast home: {plunger_axes}, safety_margin: {safety_margin}")
                 smoothie_pos = self._backend.fast_home(
                     plunger_axes, safety_margin)
                 self._current_position = self._deck_from_smoothie(
                     smoothie_pos)
+                mod_log.info(f"******* =======> Setting plunger current for {mount}: {plunger_currents}")
                 self._backend.set_active_current(plunger_currents)
+                mod_log.info(f"****** ========> Moving {mount} plunger to bottom: {bottom}")
                 await self._move_plunger(mount, bottom)
 
         if any(['doubleDropTip' in instr[0].config.quirks
