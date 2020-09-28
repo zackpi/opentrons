@@ -37,6 +37,9 @@ stages:
               version: 1
     response:
       status_code: 200
+      save:
+        json:
+          well_plate_id: data.id
       json:
         links: !anydict
         data:
@@ -70,6 +73,9 @@ stages:
               version: 1
     response:
       status_code: 200
+      save:
+        json:
+          tiprack_id: data.id
       json:
         links: !anydict
         data:
@@ -100,6 +106,9 @@ stages:
               mount: left
     response:
       status_code: 200
+      save:
+        json:
+          instrument_id: data.id
       json:
         links: !anydict
         data:
@@ -114,6 +123,36 @@ stages:
             completedAt: !anystr
             result:
               instrumentId: !anystr
+  - name: Aspirate command
+    request:
+      url: "{host:s}:{port:d}/sessions/{session_id}/commands/execute"
+      method: POST
+      json:
+        data:
+          type: SessionCommand
+          attributes:
+            command: pipette.aspirate
+            data: &create_aspirate_data
+              pipetteId: "{instrument_id}"
+              labwareId: "{well_plate_id}"
+              wellId: B2
+              volume: 1.3
+              offsetFromBottom: 1.2
+              flowRate: 1.4
+    response:
+      status_code: 403
+#      json:
+#        links: !anydict
+#        data:
+#          id: !anystr
+#          type: SessionCommand
+#          attributes:
+#            data: *create_aspirate_data
+#            command: pipette.aspirate
+#            status: executed
+#            createdAt: !anystr
+#            startedAt: !anystr
+#            completedAt: !anystr
   - name: Delete the session
     request:
       url: "{host:s}:{port:d}/sessions/{session_id}"
