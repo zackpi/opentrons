@@ -7,7 +7,7 @@ from robot_server.service.session.session_types.live_protocol \
 from robot_server.service.session.session_types.\
     live_protocol.command_interface import ProtocolErrorInstrument
 from robot_server.service.session.session_types.live_protocol.state_store \
-    import StateStore
+    import StateStore, InstrumentEntry, LabwareEntry
 from robot_server.service.session.models import command as models
 
 
@@ -175,3 +175,91 @@ async def test_handle_load_instrument_failure(
         await command_handler.handle_load_instrument(
             load_instrument_cmd
         )
+
+
+@pytest.fixture
+def aspirate_command() -> models.LiquidRequest:
+    return models.LiquidRequest(
+        pipetteId="my pipette id",
+        labwareId="my labware id",
+        wellId="my well id",
+        volume=1,
+        offsetFromBottom=2,
+        flowRate=3
+    )
+
+
+@pytest.fixture
+def labware_entry() -> LabwareEntry:
+    return LabwareEntry(definition={},
+                        calibration=(0, 0, 0),
+                        deckLocation=1)
+
+
+@pytest.fixture
+def liquid_state_store(state_store):
+    state_store.get_instrument_by_id = MagicMock()
+    state_store.get_labware_by_id = MagicMock()
+    return state_store
+
+
+@pytest.fixture
+def instrument_entry() -> InstrumentEntry:
+    return InstrumentEntry(mount=Mount.left.to_hw_mount(), name="name")
+
+
+class TestHandleAspirate:
+    async def test_no_instrument(self,
+                                 liquid_state_store,
+                                 command_handler,
+                                 aspirate_command):
+        """Test that failure to find instrument results in error"""
+        with pytest.raises(ProtocolErrorInstrument):
+            await command_handler.handle_aspirate(aspirate_command)
+
+        liquid_state_store.get_instrument_by_id.assert_called_once_with(
+            aspirate_command.pipetteId
+        )
+        liquid_state_store.get_labware_by_id.assert_called_not_called()
+
+    async def test_no_labware(self,
+                              liquid_state_store,
+                              command_handler,
+                              aspirate_command,
+                              instrument_entry):
+        """Test that failure to find labware results in error"""
+        liquid_state_store.get_instrument_by_id.return_value=instrument_entry
+        state_store.get_labware_by_id = MagicMock()
+
+        with pytest.raises(ProtocolErrorInstrument):
+            await command_handler.handle_aspirate(aspirate_command)
+
+        liquid_state_store.get_labware_by_id.assert_called_once_with(
+            aspirate_command.labwareId
+        )
+
+    async def test_move(self,
+                        hardware,
+                        command_handler,
+                        liquid_state_store,
+                        aspirate_command,
+                        instrument_entry,
+                        labware_entry):
+        liquid_state_store.get_instrument_by_id.return_value = instrument_entry
+        liquid_state_store.get_labware_by_id.return_value = labware_entry
+
+        hardware.move_to.assert_called_once_with(l)
+
+    async def test_aspirate(self,
+                            hardware,
+                            command_handler,
+                            liquid_state_store,
+                            aspirate_command,
+                            instrument_entry,
+                            labware_entry):
+        liquid_state_store.get_instrument_by_id.return_value = instrument_entry
+        liquid_state_store.get_labware_by_id.return_value = labware_entry
+
+        hardware.aspirate.assert_called_once_with(instrument_entry.mount,
+                                                  aspirate_command.volume,
+                                                  aspirate_command.volume)
