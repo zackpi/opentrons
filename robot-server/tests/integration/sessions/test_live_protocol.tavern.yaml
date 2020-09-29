@@ -123,6 +123,21 @@ stages:
             completedAt: !anystr
             result:
               instrumentId: !anystr
+  - name: Pick Up Tip
+    request:
+      url: "{host:s}:{port:d}/sessions/{session_id}/commands/execute"
+      method: POST
+      json:
+        data:
+          type: SessionCommand
+          attributes:
+            command: pipette.pickUpTip
+            data: &pipette_data
+              pipetteId: "{instrument_id}"
+              labwareId: "{well_plate_id}"
+              wellId: B2
+    response:
+      status_code: 403
   - name: Aspirate command
     request:
       url: "{host:s}:{port:d}/sessions/{session_id}/commands/execute"
@@ -132,27 +147,42 @@ stages:
           type: SessionCommand
           attributes:
             command: pipette.aspirate
-            data: &create_aspirate_data
-              pipetteId: "{instrument_id}"
-              labwareId: "{well_plate_id}"
-              wellId: B2
+            data:
+              <<: *pipette_data
               volume: 1.3
               offsetFromBottom: 1.2
               flowRate: 1.4
     response:
       status_code: 403
-#      json:
-#        links: !anydict
-#        data:
-#          id: !anystr
-#          type: SessionCommand
-#          attributes:
-#            data: *create_aspirate_data
-#            command: pipette.aspirate
-#            status: executed
-#            createdAt: !anystr
-#            startedAt: !anystr
-#            completedAt: !anystr
+  - name: Dispense command
+    request:
+      url: "{host:s}:{port:d}/sessions/{session_id}/commands/execute"
+      method: POST
+      json:
+        data:
+          type: SessionCommand
+          attributes:
+            command: pipette.dispense
+            data:
+              <<: *pipette_data
+              wellId: B3
+              volume: 1.3
+              offsetFromBottom: 1.2
+              flowRate: 1.4
+    response:
+      status_code: 403
+  - name: Drop Tip
+    request:
+      url: "{host:s}:{port:d}/sessions/{session_id}/commands/execute"
+      method: POST
+      json:
+        data:
+          type: SessionCommand
+          attributes:
+            command: pipette.dropTip
+            data: *pipette_data
+    response:
+      status_code: 403
   - name: Delete the session
     request:
       url: "{host:s}:{port:d}/sessions/{session_id}"
