@@ -1202,114 +1202,37 @@ def test_zero_volume_causes_transfer_of_disposal_vol(_instr_labware):
         assert step == expected
 
 
-def test_blowout_to_source(_instr_labware):
-    _instr_labware['ctx'].home()
-    lw1 = _instr_labware['lw1']
-    lw2 = _instr_labware['lw2']
-    API_VERSION = APIVersion(2, 6)
+def test_error_if_disposal_volume_too_high(_instr_labware):
+    # Test the fix for bug 6170.  If too high a disposal volume was given, the
+    # process would get stuck in an infinite loop.  It should throw an error,
+    # instead.
 
-    # ========== Transfer ===========
-    options = tx.TransferOptions()
-    options = options._replace(
-        transfer=options.transfer._replace(
-            disposal_volume=_instr_labware['instr'].min_volume,
-            blow_out_strategy=tx.BlowOutStrategy.SOURCE))
+    expected_max_volumes = {
+        'opentrons_96_tiprack_300ul': 300,
+        'opentrons_96_filtertiprack_200ul': 200}
 
-    dist_plan = tx.TransferPlan(
-        30, [lw1['A1'], lw1['A2']], [lw2['B1'], lw2['B2']],
-        _instr_labware['instr'],
-        max_volume=_instr_labware['instr'].hw_pipette['working_volume'],
-        api_version=API_VERSION,
-        options=options)
+    for tip_rack_name, expected_max_volume in expected_max_volumes.items():
+        context = papi.ProtocolContext()
+        labware = context.load_labware('biorad_96_wellplate_200ul_pcr', 1)
+        tip_rack = context.load_labware(tip_rack_name, 2)
+        pipette = context.load_instrument(
+            'p300_single',
+            Mount.LEFT,
+            tip_racks=[tip_rack])
 
-    exp = [
-        {'method': 'pick_up_tip', 'args': [], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw1['A1'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['B1'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw1['A1']], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw1['A2'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['B2'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw1['A2']], 'kwargs': {}},
-        {'method': 'drop_tip', 'args': [], 'kwargs': {}}]
-    for step, expected in zip(dist_plan, exp):
-        assert step == expected
-
-    # ========== Distribute ===========
-    options = tx.TransferOptions()
-    options = options._replace(
-        transfer=options.transfer._replace(
-            disposal_volume=_instr_labware['instr'].min_volume,
-            blow_out_strategy=tx.BlowOutStrategy.SOURCE))
-
-    dist_plan = tx.TransferPlan(
-        30, lw1.columns()[0][0], lw2.rows()[0][1:3],
-        _instr_labware['instr'],
-        max_volume=_instr_labware['instr'].hw_pipette['working_volume'],
-        api_version=API_VERSION,
-        options=options)
-
-    exp = [
-        {'method': 'pick_up_tip', 'args': [], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [90, lw1['A1'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['A2'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['A3'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw1['A1']], 'kwargs': {}},
-        {'method': 'drop_tip', 'args': [], 'kwargs': {}}]
-    for step, expected in zip(dist_plan, exp):
-        assert step == expected
-
-
-def test_blowout_to_dest(_instr_labware):
-    _instr_labware['ctx'].home()
-    lw1 = _instr_labware['lw1']
-    lw2 = _instr_labware['lw2']
-    API_VERSION = APIVersion(2, 6)
-
-    # ========== Transfer ===========
-    options = tx.TransferOptions()
-    options = options._replace(
-        transfer=options.transfer._replace(
-            disposal_volume=_instr_labware['instr'].min_volume,
-            blow_out_strategy=tx.BlowOutStrategy.DEST))
-
-    dist_plan = tx.TransferPlan(
-        30, [lw1['A1'], lw1['A2']], [lw2['B1'], lw2['B2']],
-        _instr_labware['instr'],
-        max_volume=_instr_labware['instr'].hw_pipette['working_volume'],
-        api_version=API_VERSION,
-        options=options)
-
-    exp = [
-        {'method': 'pick_up_tip', 'args': [], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw1['A1'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['B1'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw2['B1']], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw1['A2'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [30, lw2['B2'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw2['B2']], 'kwargs': {}},
-        {'method': 'drop_tip', 'args': [], 'kwargs': {}}]
-    for step, expected in zip(dist_plan, exp):
-        assert step == expected
-
-    # ========== Consolidate ===========
-    options = tx.TransferOptions()
-    options = options._replace(
-        transfer=options.transfer._replace(
-            blow_out_strategy=tx.BlowOutStrategy.DEST))
-
-    dist_plan = tx.TransferPlan(
-        30, lw2.rows()[0][1:3], lw1.columns()[0][0],
-        _instr_labware['instr'],
-        max_volume=_instr_labware['instr'].hw_pipette['working_volume'],
-        api_version=API_VERSION,
-        options=options)
-
-    exp = [
-        {'method': 'pick_up_tip', 'args': [], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw2['A2'], 1.0], 'kwargs': {}},
-        {'method': 'aspirate', 'args': [30, lw2['A3'], 1.0], 'kwargs': {}},
-        {'method': 'dispense', 'args': [60, lw1['A1'], 1.0], 'kwargs': {}},
-        {'method': 'blow_out', 'args': [lw1['A1']], 'kwargs': {}},
-        {'method': 'drop_tip', 'args': [], 'kwargs': {}}]
-    for step, expected in zip(dist_plan, exp):
-        assert step == expected
+        for test_volume in [expected_max_volume, expected_max_volume*10]:
+            options = tx.TransferOptions(
+                tx.Transfer(disposal_volume=test_volume))
+            with pytest.raises(ValueError):
+                plan = tx.TransferPlan(
+                    volume=test_volume,
+                    sources=labware.rows()[0][0],
+                    dests=labware.rows()[1],
+                    instr=pipette,
+                    max_volume=pipette.hw_pipette['working_volume'],
+                    api_version=context.api_version,
+                    options=options)
+                for step in plan:
+                    # Exhaust the iterator in case it raises this exception
+                    # lazily.
+                    pass
