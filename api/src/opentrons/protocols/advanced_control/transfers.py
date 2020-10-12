@@ -547,6 +547,7 @@ class TransferPlan:
                .. Dispense air gap -> ...*
 
         """
+        
         # TODO: decide whether default disposal vol for distribute should be
         # pipette min_vol or should we leave it to being 0 by default and
         # recommend users to specify a disposal vol when using distribute.
@@ -554,7 +555,7 @@ class TransferPlan:
         # the other maintains consistency in default behaviors of all functions
         plan_iter = self._expand_for_volume_constraints(
             self._volumes, self._dests,
-            self._instr.max_volume
+            self._instr.max_volume # To do: Is this a bug? Should this be the *working volume*?
             - self._strategy.disposal_volume
             - self._strategy.air_gap)
 
@@ -600,6 +601,11 @@ class TransferPlan:
         """ Split a sequence of proposed transfers if necessary to keep each
         transfer under the given max volume.
         """
+
+        if max_volume <= 0:
+            raise ValueError(
+                f"max_volume must be greater than 0.  (Got {max_volume}.)")
+
         for volume, target in zip(volumes, targets):
             while volume > max_volume * 2:
                 yield max_volume, target
@@ -648,7 +654,7 @@ class TransferPlan:
                .. Aspirate -> .....*
         """
         plan_iter = self._expand_for_volume_constraints(
-            self._volumes, self._sources, self._instr.max_volume)
+            self._volumes, self._sources, self._instr.max_volume) # TODO Is this right?  Why don't we account for disposal volume?
         current_xfer = next(plan_iter)
         if self._strategy.new_tip == types.TransferTipPolicy.ALWAYS:
             yield self._format_dict('pick_up_tip', kwargs=self._tip_opts)
