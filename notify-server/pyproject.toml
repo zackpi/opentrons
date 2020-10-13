@@ -17,6 +17,7 @@ flake8 = "^3.8.4"
 flake8-docstrings = "^1.5.0"
 flake8-annotations = "^2.4.1"
 mock = "^4.0.2"
+poetry-setup = "^0.3.6"
 
 [build-system]
 requires = ["poetry>=0.12"]
