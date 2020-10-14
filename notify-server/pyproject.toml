@@ -1,8 +1,9 @@
 [tool.poetry]
 name = "notify-server"
 version = "0.1.0"
-description = ""
+description = "pub sub system for ot2"
 authors = ["amit lissack <amit@opentrons.com>"]
+readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = "^3.7"
