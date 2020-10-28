@@ -97,16 +97,11 @@ export type LabwareCalibration = {|
   version: number,
   parent: string,
   definitionHash: string,
-|}
-
-export type LabwareCalibrationModel = {|
-  attributes: LabwareCalibration,
-  type: string,
   id: string,
 |}
 
 export type AllLabwareCalibrations = {|
-  data: Array<LabwareCalibrationModel>,
+  data: Array<LabwareCalibration>,
   meta: { ... },
 |}
 
@@ -139,15 +134,9 @@ export type TipLengthCalibration = {|
   lastModified: string,
   source: CalibrationSource,
   status: IndividualCalibrationStatus,
-|}
-
-export type TipLengthCalibrationModel = {|
-  attributes: TipLengthCalibration,
-  type: string,
   id: string,
 |}
 
 export type AllTipLengthCalibrations = {|
-  data: Array<TipLengthCalibrationModel>,
-  meta: { ... },
+  data: Array<TipLengthCalibration>,
 |}
