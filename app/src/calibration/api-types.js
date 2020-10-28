@@ -102,7 +102,6 @@ export type LabwareCalibration = {|
 
 export type AllLabwareCalibrations = {|
   data: Array<LabwareCalibration>,
-  meta: { ... },
 |}
 
 export type PipetteOffsetCalibration = {|
