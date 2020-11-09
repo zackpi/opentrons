@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from typing import (Dict, List, Optional, Union)
+from typing import (Dict, List, Optional)
 
 from opentrons import types
 from opentrons.hardware_control import API
@@ -17,6 +17,9 @@ from opentrons.protocols.implementations.interfaces.labware import \
 from opentrons.protocols.implementations.interfaces.versioned import \
     ApiVersioned
 from opentrons_shared_data.labware.dev_types import LabwareDefinition
+
+
+InstrumentDict = Dict[types.Mount, Optional[InstrumentContextInterface]]
 
 
 class ProtocolContextInterface(ApiVersioned):
@@ -79,11 +82,6 @@ class ProtocolContextInterface(ApiVersioned):
         ...
 
     @abstractmethod
-    def get_loaded_labwares(self) -> \
-            Dict[int, Union[LabwareInterface, ModuleContextInterface]]:
-        ...
-
-    @abstractmethod
     def load_module(
             self,
             module_name: str,
@@ -105,8 +103,7 @@ class ProtocolContextInterface(ApiVersioned):
         ...
 
     @abstractmethod
-    def get_loaded_instruments(self) \
-            -> Dict[str, Optional[InstrumentContextInterface]]:
+    def get_loaded_instruments(self) -> InstrumentDict:
         ...
 
     @abstractmethod
@@ -133,10 +130,6 @@ class ProtocolContextInterface(ApiVersioned):
 
     @abstractmethod
     def get_deck(self) -> Deck:
-        ...
-
-    @abstractmethod
-    def get_fixed_trash(self) -> LabwareInterface:
         ...
 
     @abstractmethod

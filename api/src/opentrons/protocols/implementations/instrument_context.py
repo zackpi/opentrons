@@ -106,7 +106,8 @@ class InstrumentContextImplementation(InstrumentContextInterface):
         for edge in edges:
             self._protocol_interface.get_hardware().hardware.move_to(
                 self._mount,
-                edge,speed
+                edge,
+                speed
             )
 
     def pick_up_tip(self,
