@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from dataclasses import dataclass
 from typing import (Dict, List, Optional)
 
 from opentrons import types
 from opentrons.hardware_control import API
-from opentrons.protocols.implementations.interfaces.modules.module_context import \
-    ModuleContextInterface
+from opentrons.hardware_control.modules import AbstractModule
 from opentrons.protocols.geometry.deck import Deck
+from opentrons.protocols.geometry.module_geometry import (
+    ModuleGeometry, ModuleType)
 from opentrons.protocols.implementations.interfaces.instrument_context \
     import InstrumentContextInterface
 from opentrons.protocols.api_support.util import (
@@ -20,6 +22,14 @@ from opentrons_shared_data.labware.dev_types import LabwareDefinition
 
 
 InstrumentDict = Dict[types.Mount, Optional[InstrumentContextInterface]]
+
+
+@dataclass(frozen=True)
+class LoadModuleResult:
+    """The result of load_module"""
+    type: ModuleType
+    geometry: ModuleGeometry
+    module: AbstractModule
 
 
 class ProtocolContextInterface(ApiVersioned):
@@ -86,11 +96,11 @@ class ProtocolContextInterface(ApiVersioned):
             self,
             module_name: str,
             location: Optional[types.DeckLocation] = None,
-            configuration: str = None) -> ModuleContextInterface:
+            configuration: str = None) -> Optional[LoadModuleResult]:
         ...
 
     @abstractmethod
-    def get_loaded_modules(self) -> Dict[int, ModuleContextInterface]:
+    def get_loaded_modules(self) -> Dict[int, LoadModuleResult]:
         ...
 
     @abstractmethod
