@@ -92,7 +92,9 @@ describe('ResultsSummary', () => {
     const wrapper = render()
     const deckParent = wrapper.find(Flex).at(2)
 
-    expect(deckParent.text()).toEqual(expect.stringContaining('Robot Deck'))
+    expect(deckParent.text()).toEqual(
+      expect.stringContaining('robot deck calibration')
+    )
     expect(deckParent.find('RenderResult').text()).toEqual(
       expect.stringContaining('Good calibration')
     )
@@ -109,7 +111,7 @@ describe('ResultsSummary', () => {
       expect.stringContaining('left pipette')
     )
     expect(leftPipParent.text()).toEqual(
-      expect.stringContaining('fake_pipette_model')
+      expect.stringContaining('pipette offset calibration')
     )
     expect(
       leftPipParent
@@ -118,7 +120,7 @@ describe('ResultsSummary', () => {
         .text()
     ).toEqual(expect.stringContaining('Good calibration'))
     expect(leftPipParent.text()).toEqual(
-      expect.stringContaining('fake tiprack display name')
+      expect.stringContaining('tip length calibration')
     )
     expect(
       leftPipParent
@@ -129,26 +131,23 @@ describe('ResultsSummary', () => {
 
     // right pipette & tip length comparison
     expect(rightPipParent.text()).toEqual(
-      expect.stringContaining('right pipette')
-    )
-    expect(rightPipParent.text()).toEqual(
-      expect.stringContaining('fake_pipette_model')
+      expect.stringContaining('pipette offset calibration')
     )
     expect(
       rightPipParent
         .find('RenderResult')
         .at(0)
         .text()
-    ).toEqual(expect.stringContaining('Bad calibration'))
+    ).toEqual(expect.stringContaining('Recalibration recommended'))
     expect(rightPipParent.text()).toEqual(
-      expect.stringContaining('fake tiprack display name 2')
+      expect.stringContaining('tip length calibration')
     )
     expect(
       rightPipParent
         .find('RenderResult')
         .at(1)
         .text()
-    ).toEqual(expect.stringContaining('Bad calibration'))
+    ).toEqual(expect.stringContaining('Recalibration recommended'))
   })
 
   it('summarizes both pipettes if no comparisons have been made', () => {

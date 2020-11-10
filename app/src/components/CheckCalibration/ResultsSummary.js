@@ -24,7 +24,6 @@ import {
   SPACING_4,
   DIRECTION_COLUMN,
 } from '@opentrons/components'
-import { getPipetteModelSpecs } from '@opentrons/shared-data'
 
 import find from 'lodash/find'
 import { PIPETTE_MOUNTS, LEFT, RIGHT } from '../../pipettes'
@@ -38,14 +37,16 @@ import type {
 } from '../../sessions/types'
 
 const GOOD_CALIBRATION = 'Good calibration'
-const BAD_CALIBRATION = 'Bad calibration'
+const BAD_CALIBRATION = 'Recalibration recommended'
 
 const ROBOT_CALIBRATION_CHECK_SUMMARY_HEADER = 'health check results:'
-const DECK_CALIBRATION_HEADER = 'Robot Deck'
+const DECK_CALIBRATION_HEADER = 'robot deck calibration'
 const PIPETTE = 'pipette'
 const HOME_AND_EXIT = 'Home robot and exit'
 const LOOKING_FOR_DATA = 'Looking for your detailed calibration data?'
 const DOWNLOAD_SUMMARY = 'Download JSON summary'
+const PIPETTE_OFFSET_CALIBRATION_HEADER = 'pipette offset calibration'
+const TIP_LENGTH_CALIBRATION_HEADER = 'tip length calibration'
 
 export function ResultsSummary(props: CalibrationPanelProps): React.Node {
   const {
@@ -119,7 +120,12 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
       <Box paddingX="5%">
         <Flex marginBottom={SPACING_4}>
           <Box>
-            <Text marginBottom={SPACING_2}>{DECK_CALIBRATION_HEADER}</Text>
+            <Text
+              marginBottom={SPACING_2}
+              textTransform={TEXT_TRANSFORM_CAPITALIZE}
+            >
+              {DECK_CALIBRATION_HEADER}
+            </Text>
             <RenderResult status={deckCalibrationResult} />
           </Box>
         </Flex>
@@ -211,12 +217,8 @@ type PipetteResultProps = {|
 |}
 
 function PipetteResult(props: PipetteResultProps): React.Node {
-  const { pipetteInfo, pipetteCalibration } = props
+  const { pipetteCalibration } = props
 
-  const displayName =
-    getPipetteModelSpecs(pipetteInfo.model)?.displayName || pipetteInfo.model
-
-  const tipRackdisplayName = pipetteInfo.tipRackDisplay
   return (
     <>
       <Box marginBottom={SPACING_4}>
@@ -224,8 +226,9 @@ function PipetteResult(props: PipetteResultProps): React.Node {
           fontSize={FONT_SIZE_BODY_2}
           fontWeight={FONT_WEIGHT_SEMIBOLD}
           marginBottom={SPACING_2}
+          textTransform={TEXT_TRANSFORM_CAPITALIZE}
         >
-          {displayName}
+          {PIPETTE_OFFSET_CALIBRATION_HEADER}
         </Text>
         <RenderResult
           status={pipetteCalibration.pipetteOffset?.status ?? null}
@@ -236,8 +239,9 @@ function PipetteResult(props: PipetteResultProps): React.Node {
           fontSize={FONT_SIZE_BODY_2}
           fontWeight={FONT_WEIGHT_SEMIBOLD}
           marginBottom={SPACING_2}
+          textTransform={TEXT_TRANSFORM_CAPITALIZE}
         >
-          {tipRackdisplayName}
+          {TIP_LENGTH_CALIBRATION_HEADER}
         </Text>
         <RenderResult status={pipetteCalibration.tipLength?.status ?? null} />
       </Box>
