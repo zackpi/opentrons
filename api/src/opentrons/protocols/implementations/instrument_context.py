@@ -1,8 +1,12 @@
 import typing
+from functools import lru_cache
 
 from opentrons import types
-from opentrons.protocols.api_support.util import Clearances, FlowRates, \
-    PlungerSpeeds, build_edges
+from opentrons.calibration_storage import get
+from opentrons.calibration_storage.types import TipLengthCalNotFound
+from opentrons.config.feature_flags import enable_calibration_overhaul
+from opentrons.protocols.api_support.labware_like import LabwareLike
+from opentrons.protocols.api_support.util import Clearances, build_edges
 from opentrons.protocols.implementations.interfaces.instrument_context import \
     InstrumentContextInterface
 from opentrons.protocols.implementations.interfaces.labware import \
@@ -18,6 +22,7 @@ class InstrumentContextImplementation(InstrumentContextInterface):
 
     _api_version: APIVersion
     _protocol_interface: ProtocolContextInterface
+    _tip_racks: typing.List[LabwareInterface]
     _mount: types.Mount
     _instrument_name: str
     _starting_tip: typing.Optional[WellImplementation]
@@ -27,21 +32,25 @@ class InstrumentContextImplementation(InstrumentContextInterface):
     def __init__(self,
                  api_version: APIVersion,
                  protocol_interface: ProtocolContextInterface,
+                 tip_racks: typing.List[LabwareInterface],
                  mount: types.Mount,
                  instrument_name: str,
                  default_speed: float):
         """"Constructor"""
         self._api_version = api_version
         self._protocol_interface = protocol_interface
+        self._tip_racks = tip_racks
         self._mount = mount
         self._instrument_name = instrument_name
         self._default_speed = default_speed
         self._well_bottom_clearances = Clearances(
-            default_aspirate=1.0, default_dispense=1.0
+            default_aspirate=1.0,
+            default_dispense=1.0
         )
 
     def get_api_version(self) -> APIVersion:
         """Get the API Version for this context's protocol."""
+        # TODO AL 20201110 - Remove need for api_version in this module
         return self._api_version
 
     def get_starting_tip(self) -> typing.Optional[WellImplementation]:
@@ -97,11 +106,20 @@ class InstrumentContextImplementation(InstrumentContextInterface):
         Touch the pipette tip to the sides of a well, with the intent of
         removing left-over droplets
         """
+        # TODO al 20201110 - build_edges relies on where being a Well. This is
+        #  an unpleasant compromise until refactoring build_edges to support
+        #  WellImplementation.
+        #  Also, build_edges should not require api_version.
+        from opentrons.protocol_api.labware import Well
+
         edges = build_edges(
-            location, v_offset, self._mount,
-            self._protocol_interface.get_deck(),
-            radius,
-            self.get_api_version()
+            where=Well(well_implementation=location,
+                       api_level=self.get_api_version()),
+            offset=v_offset,
+            mount=self._mount,
+            deck=self._protocol_interface.get_deck(),
+            radius=radius,
+            version=self.get_api_version()
         )
         for edge in edges:
             self._protocol_interface.get_hardware().hardware.move_to(
@@ -111,14 +129,33 @@ class InstrumentContextImplementation(InstrumentContextInterface):
             )
 
     def pick_up_tip(self,
-                    location: types.Location,
+                    well: WellImplementation,
                     presses: int = None,
                     increment: float = None) -> None:
-        pass
+        """Pick up a tip for the pipette to run liquid-handling commands."""
+        hw = self._protocol_interface.get_hardware().hardware
+        geometry = well.get_geometry()
 
-    def drop_tip(self, location: types.Location,
+        hw.set_current_tiprack_diameter(
+            self._mount, geometry.diameter)
+
+        hw.hardware.pick_up_tip(
+            self._mount,
+            self._tip_length_for(geometry.parent),
+            presses,
+            increment
+        )
+        hw.hardware.set_working_volume(
+            self._mount, geometry.max_volume)
+
+    def drop_tip(self,
+                 location: types.Location,
                  home_after: bool = True) -> None:
-        pass
+        """Drop the tip."""
+        self._protocol_interface.get_hardware().hardware.drop_tip(
+            self._mount,
+            home_after=home_after
+        )
 
     def home(self) -> None:
         """Home the mount"""
@@ -132,71 +169,108 @@ class InstrumentContextImplementation(InstrumentContextInterface):
         )
 
     def delay(self) -> None:
-        pass
+        """Delay protocol execution."""
+        self._protocol_interface.delay()
 
-    def move_to(self, location: types.Location, force_direct: bool = False,
-                minimum_z_height: float = None, speed: float = None) -> None:
+    def move_to(self,
+                location: types.Location,
+                force_direct: bool = False,
+                minimum_z_height: float = None,
+                speed: float = None) -> None:
+        """Move the instrument."""
         pass
 
     def get_mount(self) -> types.Mount:
+        """Get the mount this pipette is attached to."""
         return self._mount
 
-    def get_speed(self) -> PlungerSpeeds:
-        pass
-
-    def get_flow_rate(self) -> FlowRates:
-        pass
-
     def get_tip_racks(self) -> typing.List[LabwareInterface]:
-        pass
+        """Get the tip racks that have been linked to this pipette."""
+        return self._tip_racks
 
-    def set_tip_racks(self, racks: typing.List[LabwareInterface]):
-        pass
-
-    def get_trash_container(self) -> LabwareInterface:
-        pass
-
-    def set_trash_container(self, trash: LabwareInterface):
-        pass
+    def set_tip_racks(self, racks: typing.List[LabwareInterface]) -> None:
+        """Set the tip racks that have been linked to this pipette."""
+        self._tip_racks = racks
 
     def get_instrument_name(self) -> str:
+        """Get the instrument name."""
         return self._instrument_name
 
     def get_pipette_name(self) -> str:
+        """Get the pipette name."""
         return self.get_pipette()['name']
 
     def get_model(self) -> str:
+        """Get the model name."""
         return self.get_pipette()['model']
 
     def get_min_volume(self) -> float:
+        """Get the min volume."""
         return self.get_pipette()['min_volume']
 
     def get_max_volume(self) -> float:
+        """Get the max volume."""
         return self.get_pipette()['max_volume']
 
     def get_current_volume(self) -> float:
+        """Get the current volume."""
         return self.get_pipette()['current_volume']
 
     def get_available_volume(self) -> float:
+        """Get the available volume."""
         return self.get_pipette()['available_volume']
 
     def get_current_location(self) -> types.Location:
         pass
 
     def get_pipette(self) -> typing.Dict[str, typing.Any]:
-        pipette = self._protocol_interface.get_hardware().hardware.attached_instruments[self._mount]
+        """Get the hardweare pipette dictionary."""
+        hw_manager = self._protocol_interface.get_hardware()
+        pipette = hw_manager.hardware.attached_instruments[self._mount]
         if pipette is None:
             raise types.PipetteNotAttachedError
         return pipette
 
     def get_channels(self) -> int:
+        """Number of channels."""
         return self.get_pipette()['channels']
 
     def has_tip(self) -> bool:
+        """Whether a tip is attached."""
         return self.get_pipette()['has_tip']
 
     def get_return_height(self) -> float:
+        """The height to return a tip to its tiprack."""
         return self.get_pipette().get('return_tip_height', 0.5)
 
     def get_well_bottom_clearance(self) -> Clearances:
+        """The distance above the bottom of a well to aspirate or dispense."""
         return self._well_bottom_clearances
+
+    @lru_cache(maxsize=12)
+    def _tip_length_for(self, tiprack: LabwareInterface) -> float:
+        """ Get the tip length, including overlap, for a tip from this rack """
+
+        def _build_length_from_overlap() -> float:
+            tip_overlap = self.get_pipette()['tip_overlap'].get(
+                tiprack.get_uri(),
+                self.get_pipette()['tip_overlap']['default'])
+            tip_length = tiprack.get_tip_length()
+            return tip_length - tip_overlap
+
+        if not enable_calibration_overhaul():
+            return _build_length_from_overlap()
+        else:
+            try:
+                from opentrons.protocol_api.labware import Labware
+                # TODO AL 20201110 - Make LabwareLike interact with
+                #  LabwareInterface instead of Labware
+                parent = LabwareLike(Labware(implementation=tiprack,
+                                             api_level=self.get_api_version())
+                                     ).first_parent() or ''
+                return get.load_tip_length_calibration(
+                    self.get_pipette()['pipette_id'],
+                    tiprack.get_definition(),
+                    parent)['tipLength']
+            except TipLengthCalNotFound:
+                return _build_length_from_overlap()

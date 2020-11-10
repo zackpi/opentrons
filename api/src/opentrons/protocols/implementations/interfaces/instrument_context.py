@@ -4,8 +4,7 @@ from abc import abstractmethod
 import typing
 
 from opentrons import types
-from opentrons.protocols.api_support.util import (
-    FlowRates, PlungerSpeeds, Clearances)
+from opentrons.protocols.api_support.util import Clearances
 from opentrons.protocols.implementations.interfaces.versioned import \
     ApiVersioned
 from opentrons.protocols.implementations.well import WellImplementation
@@ -62,7 +61,7 @@ class InstrumentContextInterface(ApiVersioned):
 
     @abstractmethod
     def pick_up_tip(self,
-                    location: types.Location,
+                    well: types.Location,
                     presses: int = None,
                     increment: float = None) -> None:
         ...
@@ -98,27 +97,11 @@ class InstrumentContextInterface(ApiVersioned):
         ...
 
     @abstractmethod
-    def get_speed(self) -> PlungerSpeeds:
-        ...
-
-    @abstractmethod
-    def get_flow_rate(self) -> FlowRates:
-        ...
-
-    @abstractmethod
     def get_tip_racks(self) -> typing.List[LabwareInterface]:
         ...
 
     @abstractmethod
-    def set_tip_racks(self, racks: typing.List[LabwareInterface]):
-        ...
-
-    @abstractmethod
-    def get_trash_container(self) -> LabwareInterface:
-        ...
-
-    @abstractmethod
-    def set_trash_container(self, trash: LabwareInterface):
+    def set_tip_racks(self, racks: typing.List[LabwareInterface]) -> None:
         ...
 
     @abstractmethod
