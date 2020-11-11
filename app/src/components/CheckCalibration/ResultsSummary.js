@@ -7,6 +7,7 @@ import {
   Flex,
   PrimaryBtn,
   Text,
+  Link,
   SPACING_2,
   SPACING_3,
   ALIGN_CENTER,
@@ -23,6 +24,7 @@ import {
   SPACING_5,
   SPACING_4,
   DIRECTION_COLUMN,
+  DISPLAY_INLINE_BLOCK,
 } from '@opentrons/components'
 
 import find from 'lodash/find'
@@ -43,10 +45,12 @@ const ROBOT_CALIBRATION_CHECK_SUMMARY_HEADER = 'health check results:'
 const DECK_CALIBRATION_HEADER = 'robot deck calibration'
 const PIPETTE = 'pipette'
 const HOME_AND_EXIT = 'Home robot and exit'
-const LOOKING_FOR_DATA = 'Looking for your detailed calibration data?'
 const DOWNLOAD_SUMMARY = 'Download JSON summary'
 const PIPETTE_OFFSET_CALIBRATION_HEADER = 'pipette offset calibration'
 const TIP_LENGTH_CALIBRATION_HEADER = 'tip length calibration'
+const NEED_HELP = 'Need help calibrating your OT-2 accurately?'
+const CONTACT_SUPPORT = 'Contact support'
+const SUPPORT_URL = 'https://support.opentrons.com'
 
 export function ResultsSummary(props: CalibrationPanelProps): React.Node {
   const {
@@ -115,7 +119,6 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
         >
           {ROBOT_CALIBRATION_CHECK_SUMMARY_HEADER}
         </Text>
-        <NeedHelpLink maxHeight="1rem" />
       </Flex>
       <Box paddingX="5%">
         <Flex marginBottom={SPACING_4}>
@@ -162,7 +165,6 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
           fontWeight={FONT_WEIGHT_LIGHT}
           fontSize={FONT_SIZE_BODY_2}
         >
-          <Text>{LOOKING_FOR_DATA}</Text>
           <Text
             as="a"
             color={C_BLUE}
@@ -173,6 +175,15 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
           >
             {DOWNLOAD_SUMMARY}
           </Text>
+          <Box>
+            <Text marginTop={SPACING_4} display={DISPLAY_INLINE_BLOCK}>
+              {NEED_HELP}
+            </Text>
+            &nbsp;
+            <Link color={C_BLUE} external={true} href={SUPPORT_URL}>
+              {CONTACT_SUPPORT}
+            </Link>
+          </Box>
         </Flex>
         <Flex margin={SPACING_4}>
           <PrimaryBtn width="100%" onClick={cleanUpAndExit}>
