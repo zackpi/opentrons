@@ -10,7 +10,7 @@ import * as Sessions from '../../../sessions'
 import type { State } from '../../../types'
 import { ResultsSummary } from '../ResultsSummary'
 import { saveAs } from 'file-saver'
-import { Box, Flex, PrimaryBtn } from '@opentrons/components'
+import { Box, PrimaryBtn } from '@opentrons/components'
 
 jest.mock('file-saver')
 jest.mock('../../../calibration/selectors')
@@ -35,12 +35,33 @@ describe('ResultsSummary', () => {
 
   const getExitButton = wrapper => wrapper.find(PrimaryBtn)
 
-  const getSaveLink = wrapper => wrapper.find('[children="Download JSON summary"]').find('a')
+  const getSaveLink = wrapper =>
+    wrapper.find('[children="Download JSON summary"]').find('a')
   const getResultsParent = wrapper => wrapper.children(Box).at(0)
-  const getDeckParent = wrapper => getResultsParent(wrapper).children().at(0).children().at(0)
-  const getPipParent = wrapper => getResultsParent(wrapper).children().at(0).children().at(1)
-  const getLeftPipParent = wrapper => getPipParent(wrapper).children().at(0).children().at(0)
-  const getRightPipParent = wrapper => getPipParent(wrapper).children().at(0).children().at(1)
+  const getDeckParent = wrapper =>
+    getResultsParent(wrapper)
+      .children()
+      .at(0)
+      .children()
+      .at(0)
+  const getPipParent = wrapper =>
+    getResultsParent(wrapper)
+      .children()
+      .at(0)
+      .children()
+      .at(1)
+  const getLeftPipParent = wrapper =>
+    getPipParent(wrapper)
+      .children()
+      .at(0)
+      .children()
+      .at(0)
+  const getRightPipParent = wrapper =>
+    getPipParent(wrapper)
+      .children()
+      .at(0)
+      .children()
+      .at(1)
   beforeEach(() => {
     mockDeleteSession = jest.fn()
     const mockSendCommands = jest.fn()
@@ -152,7 +173,7 @@ describe('ResultsSummary', () => {
     ).toEqual(expect.stringContaining('Recalibration recommended'))
   })
 
-  it('summarizes both pipettes if no comparisons have been made', () => {
+  it('summarizes neither pipette if no comparisons have been made', () => {
     const emptyComparison = {
       first: {},
       second: {},
@@ -162,8 +183,8 @@ describe('ResultsSummary', () => {
     })
     const leftPipParent = getLeftPipParent(wrapper)
     const rightPipParent = getRightPipParent(wrapper)
-    expect(leftPipParent.exists()).toBe(true)
-    expect(rightPipParent.exists()).toBe(true)
+    expect(leftPipParent.exists()).toBe(false)
+    expect(rightPipParent.exists()).toBe(false)
   })
 
   it('does not summarize second pipette if none present', () => {
@@ -191,5 +212,4 @@ describe('ResultsSummary', () => {
     wrapper.update()
     expect(mockSaveAs).toHaveBeenCalled()
   })
-
 })

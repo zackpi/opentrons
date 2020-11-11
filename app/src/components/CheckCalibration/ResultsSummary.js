@@ -30,7 +30,6 @@ import {
 import find from 'lodash/find'
 import { PIPETTE_MOUNTS, LEFT, RIGHT } from '../../pipettes'
 import { saveAs } from 'file-saver'
-import { NeedHelpLink } from '../CalibrationPanels/NeedHelpLink'
 
 import type { CalibrationPanelProps } from '../CalibrationPanels/types'
 import type {
@@ -91,14 +90,14 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
       headerText: `${LEFT} ${PIPETTE}`,
       pipette: leftPipette,
       calibration: leftPipette
-        ? comparisonsByPipette?.[leftPipette.rank]
+        ? comparisonsByPipette?.[leftPipette.rank] ?? null
         : null,
     },
     right: {
       headerText: `${RIGHT} ${PIPETTE}`,
       pipette: rightPipette,
       calibration: rightPipette
-        ? comparisonsByPipette?.[rightPipette.rank]
+        ? comparisonsByPipette?.[rightPipette.rank] ?? null
         : null,
     },
   }
@@ -136,7 +135,8 @@ export function ResultsSummary(props: CalibrationPanelProps): React.Node {
           {PIPETTE_MOUNTS.map(m => {
             if (
               calibrationsByMount[m].pipette &&
-              calibrationsByMount[m].calibration
+              calibrationsByMount[m].calibration &&
+              Object.entries(calibrationsByMount[m].calibration).length
             ) {
               return (
                 <Box key={m} width="48%">
