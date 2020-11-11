@@ -35,7 +35,12 @@ describe('ResultsSummary', () => {
 
   const getExitButton = wrapper => wrapper.find(PrimaryBtn)
 
-  const getSaveLink = wrapper => wrapper.find('a').at(1)
+  const getSaveLink = wrapper => wrapper.find('[children="Download JSON summary"]').find('a')
+  const getResultsParent = wrapper => wrapper.children(Box).at(0)
+  const getDeckParent = wrapper => getResultsParent(wrapper).children().at(0).children().at(0)
+  const getPipParent = wrapper => getResultsParent(wrapper).children().at(0).children().at(1)
+  const getLeftPipParent = wrapper => getPipParent(wrapper).children().at(0).children().at(0)
+  const getRightPipParent = wrapper => getPipParent(wrapper).children().at(0).children().at(1)
   beforeEach(() => {
     mockDeleteSession = jest.fn()
     const mockSendCommands = jest.fn()
@@ -90,8 +95,7 @@ describe('ResultsSummary', () => {
 
   it('displays good deck calibration result', () => {
     const wrapper = render()
-    const deckParent = wrapper.find(Flex).at(2)
-
+    const deckParent = getDeckParent(wrapper)
     expect(deckParent.text()).toEqual(
       expect.stringContaining('robot deck calibration')
     )
@@ -102,10 +106,8 @@ describe('ResultsSummary', () => {
 
   it('summarizes both pipettes & tip length calibrations if comparisons have been made', () => {
     const wrapper = render()
-    const pipParent = wrapper.find(Flex).at(4)
-    const leftPipParent = pipParent.find(Box).at(0)
-    const rightPipParent = pipParent.find(Box).at(3)
-
+    const leftPipParent = getLeftPipParent(wrapper)
+    const rightPipParent = getRightPipParent(wrapper)
     // left pipette & tip length comparison
     expect(leftPipParent.text()).toEqual(
       expect.stringContaining('left pipette')
@@ -158,21 +160,18 @@ describe('ResultsSummary', () => {
     const wrapper = render({
       comparisonsByPipette: emptyComparison,
     })
-    const pipParent = wrapper.find(Flex).at(4)
-    const leftPipParent = pipParent.find(Box).at(0)
-    const rightPipParent = pipParent.find(Box).at(3)
-
-    expect(leftPipParent.exists()).toBe(false)
-    expect(rightPipParent.exists()).toBe(false)
+    const leftPipParent = getLeftPipParent(wrapper)
+    const rightPipParent = getRightPipParent(wrapper)
+    expect(leftPipParent.exists()).toBe(true)
+    expect(rightPipParent.exists()).toBe(true)
   })
 
   it('does not summarize second pipette if none present', () => {
     const wrapper = render({
       instruments: [mockSessionDetails.instruments[0]],
     })
-    const pipParent = wrapper.find(Flex).at(4)
-    const leftPipParent = pipParent.find(Box).at(0)
-    const rightPipParent = pipParent.find(Box).at(3)
+    const leftPipParent = getLeftPipParent(wrapper)
+    const rightPipParent = getRightPipParent(wrapper)
 
     expect(leftPipParent.exists()).toBe(true)
     expect(rightPipParent.exists()).toBe(false)
@@ -193,8 +192,4 @@ describe('ResultsSummary', () => {
     expect(mockSaveAs).toHaveBeenCalled()
   })
 
-  it('renders need help link', () => {
-    const wrapper = render()
-    expect(wrapper.find('NeedHelpLink').exists()).toBe(true)
-  })
 })
