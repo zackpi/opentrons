@@ -20,7 +20,6 @@ from opentrons.protocols.implementations.interfaces.labware import \
     LabwareInterface
 from opentrons.protocols.implementations.interfaces.protocol_context import \
     ProtocolContextInterface, InstrumentDict, LoadModuleResult
-from opentrons.protocols.implementations.location_cache import LocationCache
 from opentrons.protocols.api_support.util import (
     AxisMaxSpeeds, HardwareToManage, HardwareManager)
 from opentrons.protocols.labware import load_from_definition, \
@@ -64,7 +63,6 @@ class ProtocolContextImplementation(ProtocolContextInterface):
             mount: None for mount in types.Mount
         }
         self._modules: Set[LoadModuleResult] = set()
-        self._location_cache = LocationCache()
 
         self._hw_manager = HardwareManager(hardware)
         self._log = MODULE_LOG.getChild(self.__class__.__name__)
@@ -74,6 +72,7 @@ class ProtocolContextImplementation(ProtocolContextInterface):
 
         self._bundled_data: Dict[str, bytes] = bundled_data or {}
         self._default_max_speeds = AxisMaxSpeeds()
+        self._last_location: Optional[types.Location] = None
 
     @classmethod
     def build_using(cls,
@@ -242,7 +241,7 @@ class ProtocolContextImplementation(ProtocolContextInterface):
             protocol_interface=self,
             mount=mount,
             instrument_name=instrument_name,
-            default_speed=400.0,
+            default_speed=400.0
         )
         self._instruments[mount] = new_instr
         self._log.info("Instrument {} loaded".format(new_instr))
@@ -288,3 +287,11 @@ class ProtocolContextImplementation(ProtocolContextInterface):
     def door_closed(self) -> bool:
         """Check if door is closed."""
         return DoorState.CLOSED == self._hw_manager.hardware.door_state
+
+    def get_last_location(self) -> Optional[types.Location]:
+        """Get the most recent moved to location."""
+        return self._last_location
+
+    def set_last_location(self, location: Optional[types.Location]) -> None:
+        """Set the most recent moved to location."""
+        self._last_location = location

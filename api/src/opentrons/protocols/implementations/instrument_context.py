@@ -188,11 +188,14 @@ class InstrumentContextImplementation(InstrumentContextInterface):
         if not speed:
             speed = self.get_default_speed()
 
+        hardware = self._protocol_interface.get_hardware().hardware
+
         from_center = from_lw.center_multichannel_on_wells() \
             if from_lw else False
         cp_override = CriticalPoint.XY_CENTER if from_center else None
+
         from_loc = types.Location(
-            self._protocol_interface.get_hardware().hardware.gantry_position(
+            hardware.gantry_position(
                 self._mount, critical_point=cp_override),
             from_lw)
 
@@ -200,18 +203,16 @@ class InstrumentContextImplementation(InstrumentContextInterface):
             if isinstance(mod, ThermocyclerContext):
                 mod.flag_unsafe_move(to_loc=location, from_loc=from_loc)
 
-        instr_max_height = self._protocol_interface.get_hardware().hardware.get_instrument_max_height(self._mount)
+        instr_max_height = hardware.get_instrument_max_height(self._mount)
         moves = planning.plan_moves(from_loc, location,
                                     self._protocol_interface.get_deck(),
                                     instr_max_height,
                                     force_direct=force_direct,
-                                    minimum_z_height=minimum_z_height
-                                    )
-        self._log.debug("move_to: {}->{} via:\n\t{}"
-                        .format(from_loc, location, moves))
+                                    minimum_z_height=minimum_z_height)
+
         try:
             for move in moves:
-                self._protocol_interface.get_hardware().hardware.move_to(
+                hardware.move_to(
                     self._mount, move[0], critical_point=move[1], speed=speed,
                     max_speeds=self._protocol_interface.get_max_speeds().data)
         except Exception:

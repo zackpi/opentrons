@@ -153,3 +153,11 @@ class ProtocolContextInterface(ApiVersioned):
     @abstractmethod
     def door_closed(self) -> bool:
         ...
+
+    @abstractmethod
+    def get_last_location(self) -> Optional[types.Location]:
+        ...
+
+    @abstractmethod
+    def set_last_location(self, location: Optional[types.Location]) -> None:
+        ...

@@ -61,7 +61,7 @@ class InstrumentContextInterface(ApiVersioned):
 
     @abstractmethod
     def pick_up_tip(self,
-                    well: types.Location,
+                    well: WellImplementation,
                     presses: int = None,
                     increment: float = None) -> None:
         ...

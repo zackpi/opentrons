@@ -17,7 +17,6 @@ from opentrons.protocols.api_support.util import (
     clamp_value, requires_version, build_edges)
 from opentrons.protocols.implementations.interfaces.protocol_context import \
     ProtocolContextInterface
-from opentrons.protocols.implementations.location_cache import LocationCache
 
 from opentrons.protocols.types import APIVersion
 from opentrons_shared_data.protocol.dev_types import (
@@ -72,7 +71,6 @@ class InstrumentContext(CommandPublisher):
     def __init__(self,
                  ctx: ProtocolContextInterface,
                  broker: Broker,
-                 location_cache: LocationCache,
                  hardware_mgr: 'HardwareManager',
                  mount: types.Mount,
                  log_parent: logging.Logger,
@@ -110,7 +108,6 @@ class InstrumentContext(CommandPublisher):
         self._starting_tip: Union[Well, None] = None
         self.requested_as = requested_as
         self._flow_rates.set_defaults(self._api_version)
-        self._location_cache = location_cache
 
     @property  # type: ignore
     @requires_version(2, 0)
@@ -248,8 +245,8 @@ class InstrumentContext(CommandPublisher):
             raise TypeError(
                 'location should be a Well or Location, but it is {}'
                 .format(location))
-        elif self._location_cache.location:
-            dest = self._location_cache.location
+        elif self._ctx.get_last_location():
+            dest = self._ctx.get_last_location()
         else:
             raise RuntimeError(
                 "If aspirate is called without an explicit location, another"
@@ -276,7 +273,7 @@ class InstrumentContext(CommandPublisher):
                         "blow_out.")
                 self._hw_manager.hardware.prepare_for_aspirate(self._mount)
             self.move_to(dest)
-        elif dest != self._location_cache.location:
+        elif dest != self._ctx.get_last_location():
             self.move_to(dest)
 
         c_vol = self.hw_pipette['available_volume'] if not volume else volume
@@ -354,8 +351,8 @@ class InstrumentContext(CommandPublisher):
             raise TypeError(
                 'location should be a Well or Location, but it is {}'
                 .format(location))
-        elif self._location_cache.location:
-            loc = self._location_cache.location
+        elif self._ctx.get_last_location():
+            loc = self._ctx.get_last_location()
         else:
             raise RuntimeError(
                 "If dispense is called without an explicit location, another"
@@ -473,7 +470,7 @@ class InstrumentContext(CommandPublisher):
             raise TypeError(
                 'location should be a Well or Location, but it is {}'
                 .format(location))
-        elif self._location_cache.location:
+        elif self._ctx.get_last_location():
             # if location cache exists, pipette blows out immediately at
             # current location, no movement is needed
             pass
@@ -540,10 +537,11 @@ class InstrumentContext(CommandPublisher):
 
         # If location is a valid well, move to the well first
         if location is None:
-            if not self._location_cache.location:
+            last_location = self._ctx.get_last_location()
+            if not last_location:
                 raise RuntimeError('No valid current location cache present')
             else:
-                well = self._location_cache.location_labware
+                well = last_location.labware
                 # type checked below
         else:
             well = LabwareLike(location)
@@ -615,7 +613,7 @@ class InstrumentContext(CommandPublisher):
 
         if height is None:
             height = 5
-        loc = self._location_cache.location
+        loc = self._ctx.get_last_location()
         if not loc or not loc.labware.is_well:
             raise RuntimeError('No previous Well cached to perform air gap')
         target = loc.labware.as_well().top(height)
@@ -1224,10 +1222,10 @@ class InstrumentContext(CommandPublisher):
                     self._mount, move[0], critical_point=move[1], speed=speed,
                     max_speeds=self._ctx.get_max_speeds().data)
         except Exception:
-            self._location_cache.clear()
+            self._ctx.set_last_location(None)
             raise
         else:
-            self._location_cache.location = location
+            self._ctx.set_last_location(location)
         return self
 
     @property  # type: ignore

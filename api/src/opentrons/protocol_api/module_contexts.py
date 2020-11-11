@@ -7,7 +7,7 @@ from opentrons.broker import Broker
 from opentrons.hardware_control import modules
 from opentrons.hardware_control.types import Axis
 from opentrons.commands import CommandPublisher
-from opentrons.protocols.implementation.interfaces.protocol_context import \
+from opentrons.protocols.implementations.interfaces.protocol_context import \
     ProtocolContextInterface
 from opentrons.protocols.types import APIVersion
 
@@ -201,7 +201,7 @@ class TemperatureModuleContext(ModuleContext[ModuleGeometry]):
 
     """
     def __init__(self,
-                 ctx: AbstractProtocolContext,
+                 ctx: ProtocolContextInterface,
                  broker: Broker,
                  hw_module: modules.tempdeck.TempDeck,
                  geometry: ModuleGeometry,
@@ -284,7 +284,7 @@ class MagneticModuleContext(ModuleContext[ModuleGeometry]):
 
     """
     def __init__(self,
-                 ctx: AbstractProtocolContext,
+                 ctx: ProtocolContextInterface,
                  broker: Broker,
                  hw_module: modules.magdeck.MagDeck,
                  geometry: ModuleGeometry,
@@ -417,7 +417,7 @@ class ThermocyclerContext(ModuleContext[ThermocyclerGeometry]):
     .. versionadded:: 2.0
     """
     def __init__(self,
-                 ctx: AbstractProtocolContext,
+                 ctx: ProtocolContextInterface,
                  broker: Broker,
                  hw_module: modules.thermocycler.Thermocycler,
                  geometry: ThermocyclerGeometry,
@@ -438,12 +438,12 @@ class ThermocyclerContext(ModuleContext[ThermocyclerGeometry]):
                 "Cannot assure a safe gantry position to avoid colliding"
                 " with the lid of the Thermocycler Module.")
         else:
-            self._ctx.get_hardware().hardware.retract(instr._mount)
+            self._ctx.get_hardware().hardware.retract(instr.get_mount())
             high_point = self._ctx.get_hardware().hardware.current_position(
-                    instr._mount)
+                    instr.get_mount())
             trash_top = self._ctx.get_fixed_trash().wells()[0].top()
             safe_point = trash_top.point._replace(
-                    z=high_point[Axis.by_mount(instr._mount)])
+                    z=high_point[Axis.by_mount(instr.get_mount())])
             instr.move_to(types.Location(safe_point, None), force_direct=True)
 
     def flag_unsafe_move(self,
